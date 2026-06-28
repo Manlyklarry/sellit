@@ -4,24 +4,35 @@
 
 - Expo SDK 54 (`expo` `~54.0.34`)
 - React 19.1 and React Native 0.81.5
-- Entry point: `index.js`; main screen: `App.js`
+- Entry point: `index.js`; root component: `App.js`
+
+## App Structure
+
+- App source is under `app/`.
+- Static images are under `app/assets/`.
+- Screens are under `app/screens/`.
+- Shared color constants live in `app/config/colors.js`.
+- `App.js` currently renders `ViewImageScreen` and wraps the app in
+  `SafeAreaProvider`.
+- `WelcomeScreen` lives at `app/screens/welcomeScreen.js`.
+- `ViewImageScreen` lives at `app/screens/viewImageScreen.js`.
 
 ## UI Decisions
 
-- Use `SafeAreaProvider` and `SafeAreaView` from
-  `react-native-safe-area-context` for notch and status-bar insets.
+- Use `SafeAreaProvider` at the app root and `SafeAreaView` from
+  `react-native-safe-area-context` for screen-level notch and status-bar
+  insets.
 - Do not use the deprecated `SafeAreaView` exported by `react-native`.
-- The main text currently logs `Text Pressed` through its `onPress` handler.
 - The user has reached the Code with Mosh Touchables lesson. For course
   compatibility, recognize `TouchableOpacity`, `TouchableHighlight`, and
   `TouchableWithoutFeedback`, but prefer modern `Pressable` for new interactive
   controls unless the lesson specifically needs an older Touchable API.
-- The current Image lesson uses a remote dog photo with `blurRadius={5}`.
-  `loadingIndicatorSource` uses `./assets/icon.png` as the Android-only
-  temporary placeholder while the remote image loads.
-- The Image lesson demonstrates `resizeMode="contain"` inside a 300×200 gray
-  box, so the portrait source remains fully visible and the unused space is
-  obvious. Change it to `"cover"` to demonstrate cropping.
+- Use `app/config/colors.js` for repeated app colors instead of hard-coded
+  color strings.
+- `WelcomeScreen` uses `background.jpg`, `logo-red.png`, and the tagline
+  `Sell what you don't need`.
+- `ViewImageScreen` uses `chair.jpg`, a black background, safe-area-aware top
+  actions, and `resizeMode="contain"`.
 
 ## Development
 
@@ -29,10 +40,11 @@
 - Before starting any Expo or Metro process, check whether an Expo dev server is
   already running. If one is already running, reuse it and do not start a
   duplicate server.
-- On the current session, Metro is already running on port `8081` from this
-  project via `node ...\expo\bin\cli start`. Use that process for refreshes.
-- To refresh connected Expo Go clients, use Metro's existing reload endpoint at
-  `http://127.0.0.1:8081/reload` instead of starting another server.
+- Treat a failed `http://127.0.0.1:8081/status` check as inconclusive. Check
+  existing Expo/Node processes and ports, and ask before launching a new Expo
+  terminal unless the user explicitly requests it.
+- To refresh connected Expo Go clients, use the active Metro reload endpoint
+  instead of starting another server.
 - The emulator currently has `adb reverse tcp:8081 tcp:8081`; the real Android
   phone may be connected over Wi-Fi through the scanned Expo QR code and will
   not necessarily appear in `adb devices`.
