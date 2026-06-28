@@ -12,12 +12,41 @@
   `react-native-safe-area-context` for notch and status-bar insets.
 - Do not use the deprecated `SafeAreaView` exported by `react-native`.
 - The main text currently logs `Text Pressed` through its `onPress` handler.
+- The user has reached the Code with Mosh Touchables lesson. For course
+  compatibility, recognize `TouchableOpacity`, `TouchableHighlight`, and
+  `TouchableWithoutFeedback`, but prefer modern `Pressable` for new interactive
+  controls unless the lesson specifically needs an older Touchable API.
+- The current Image lesson uses a remote dog photo with `blurRadius={5}`.
+  `loadingIndicatorSource` uses `./assets/icon.png` as the Android-only
+  temporary placeholder while the remote image loads.
+- The Image lesson demonstrates `resizeMode="contain"` inside a 300×200 gray
+  box, so the portrait source remains fully visible and the unused space is
+  obvious. Change it to `"cover"` to demonstrate cropping.
 
 ## Development
 
 - Start Android development with `npm run android`.
+- Before starting any Expo or Metro process, check whether an Expo dev server is
+  already running. If one is already running, reuse it and do not start a
+  duplicate server.
+- On the current session, Metro is already running on port `8081` from this
+  project via `node ...\expo\bin\cli start`. Use that process for refreshes.
+- To refresh connected Expo Go clients, use Metro's existing reload endpoint at
+  `http://127.0.0.1:8081/reload` instead of starting another server.
+- The emulator currently has `adb reverse tcp:8081 tcp:8081`; the real Android
+  phone may be connected over Wi-Fi through the scanned Expo QR code and will
+  not necessarily appear in `adb devices`.
+- The user often starts Expo manually with `npx expo start`. The Expo server URL
+  can change between sessions, so discover the active server each time instead
+  of assuming a fixed `exp://...` address.
+- Make runtime checks visible here. Only start a new Expo server when no usable
+  existing server is running or when the user explicitly asks for a new server.
 - Use the `Pixel_7` Android emulator and Expo Go.
 - Keep Metro running in a visible terminal when console output is needed.
+- The current `Pixel_7` AVD has an unresolved Android System UI/package-manager
+  stability issue even after a data wipe. Use the real Android phone for
+  runtime verification until the AVD is recreated or its system image is
+  repaired.
 
 ## Course Guidance
 
