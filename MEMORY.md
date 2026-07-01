@@ -10,6 +10,8 @@
 
 - App source is under `app/`.
 - Static images are under `app/assets/`.
+- Listing images are under `app/assets/listings/`.
+- Profile images are under `app/assets/profiles/`.
 - Screens are under `app/screens/`.
 - Shared color constants live in `app/config/colors.js`.
 - `App.js` currently renders `ViewImageScreen` and wraps the app in
@@ -33,6 +35,16 @@
   `Sell what you don't need`.
 - `ViewImageScreen` uses `chair.jpg`, a black background, safe-area-aware top
   actions, and `resizeMode="contain"`.
+- `ListingDetailsScreen` currently uses
+  `app/assets/listings/chair-laundry-basket.png` for the chair/laundry basket
+  listing image.
+- The chair/laundry basket listing owner is `MANLYKLARRY`, with profile image
+  `app/assets/profiles/larry.jpeg`.
+- Available listing sample assets:
+  `chair-laundry-basket.png`, `red-bicycle.png`, `gray-sofa.png`,
+  `desk-lamp-side-table.png`, `kente-cloth.png`, `cocoa-beans.png`,
+  `yam-tubers.png`, `leather-sandals.png`, `charcoal-stove.png`, and
+  `plantains.png`.
 
 ## Development
 

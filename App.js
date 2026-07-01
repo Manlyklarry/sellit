@@ -1,12 +1,12 @@
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import ViewImageScreen from "./app/screens/viewImageScreen";
-import WelcomeScreen from "./app/screens/welcomeScreen";
+import ListingDetailsScreen from "./app/screens/listingDetailsScreen";
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <WelcomeScreen />
+      <ListingDetailsScreen />
     </SafeAreaProvider>
   );
 }
