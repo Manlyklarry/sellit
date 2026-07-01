@@ -55,10 +55,20 @@
   existing server is running or when the user explicitly asks for a new server.
 - Use the `Pixel_7` Android emulator and Expo Go.
 - Keep Metro running in a visible terminal when console output is needed.
-- The current `Pixel_7` AVD has an unresolved Android System UI/package-manager
-  stability issue even after a data wipe. Use the real Android phone for
-  runtime verification until the AVD is recreated or its system image is
-  repaired.
+- The `Pixel_7` AVD was repaired on 2026-06-30: it now cold-boots from the
+  installed Android 36.1 Google Play 16KB system image, snapshot fast boot is
+  disabled, stale QCOW/snapshot state was cleared, and Expo Go 54.0.8 was
+  reinstalled after the data reset.
+- After restarting `Pixel_7`, restore Metro forwarding with
+  `adb -s emulator-5554 reverse tcp:8081 tcp:8081` before opening the Expo app.
+- VS Code terminal persistent sessions are disabled for this workspace in
+  `.vscode/settings.json` so stale terminal commands/output are not restored.
+- Windows Recent screenshot/Snipping Tool/Game Bar entries were cleared on
+  2026-06-30 because stale screenshot links were being restored as PowerShell
+  commands when relaunching Pixel_7.
+- `com.android.phone` is disabled on the Pixel_7 emulator to avoid the phone
+  service ANR that was surfacing as a System UI not responding dialog after
+  cold boot.
 
 ## Course Guidance
 

@@ -1,6 +1,6 @@
 import { Image, ImageBackground, StyleSheet, Text, View } from "react-native";
 
-import colors from "../config/colors";
+import AppButton from "../components/AppButton";
 
 function WelcomeScreen() {
   return (
@@ -15,8 +15,12 @@ function WelcomeScreen() {
       </View>
 
       <View style={styles.buttonsContainer}>
-        <View style={styles.loginButton} />
-        <View style={styles.registerButton} />
+        <AppButton title="Login" onPress={() => console.log("login")} />
+        <AppButton
+          title="Register"
+          color="secondary"
+          onPress={() => console.log("register")}
+        />
       </View>
     </ImageBackground>
   );
@@ -44,16 +48,7 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     width: "100%",
-  },
-  loginButton: {
-    width: "100%",
-    height: 70,
-    backgroundColor: colors.primary,
-  },
-  registerButton: {
-    width: "100%",
-    height: 70,
-    backgroundColor: colors.secondary,
+    padding: 20,
   },
 });
 
