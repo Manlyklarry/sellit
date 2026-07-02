@@ -13,7 +13,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <ListingsScreen />
+        <AccountScreen />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
