@@ -16,13 +16,16 @@ function FormImagePicker({ imageLimit = 6, name }) {
   } = useFormikContext();
   const imageUris = values[name] || [];
   const showError = touched[name] || submitCount > 0;
+  const imageCountIsValid =
+    imageUris.length > 0 && imageUris.length <= imageLimit;
+  const error = imageCountIsValid ? null : errors[name];
 
   const updateImages = async (nextImageUris) => {
     await setFieldValue(name, nextImageUris, true);
     setFieldTouched(name, true, false);
 
     if (nextImageUris.length > 0) setFieldError(name, undefined);
-    validateField(name);
+    await validateField(name);
   };
 
   const handleAdd = async (uri) => {
@@ -47,7 +50,7 @@ function FormImagePicker({ imageLimit = 6, name }) {
         onAddImage={handleAdd}
         onRemoveImage={handleRemove}
       />
-      <ErrorMessage error={errors[name]} visible={showError} />
+      <ErrorMessage error={error} visible={showError} />
     </>
   );
 }
