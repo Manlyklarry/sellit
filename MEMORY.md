@@ -132,6 +132,8 @@
 - Keep Metro running in a visible terminal when console output is needed.
 - Verify code changes with `npx expo export` unless the task specifically needs
   device runtime validation.
+- When making commits from this machine for this project, push them to
+  `origin/main` after the commit unless the user says not to push.
 - The `Pixel_7` AVD was repaired on 2026-06-30: it now cold-boots from the
   installed Android 36.1 Google Play 16KB system image, snapshot fast boot is
   disabled, stale QCOW/snapshot state was cleared, and Expo Go 54.0.8 was
