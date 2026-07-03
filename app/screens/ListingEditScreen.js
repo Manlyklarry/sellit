@@ -54,7 +54,8 @@ const categories = [
 const validationSchema = Yup.object().shape({
   images: Yup.array()
     .min(1, "Please add at least one photo.")
-    .max(6, "You can add up to 6 photos."),
+    .max(6, "You can add up to 6 photos.")
+    .required("Please add at least one photo."),
   title: Yup.string()
     .required("Title is required.")
     .min(3, "Title must be at least 3 characters.")
@@ -123,7 +124,7 @@ function ListingEditScreen() {
         >
           <View style={styles.section}>
             <Text style={styles.label}>Photos</Text>
-            <FormImagePicker name="images" />
+            <FormImagePicker imageLimit={6} name="images" />
           </View>
 
           <AppFormField

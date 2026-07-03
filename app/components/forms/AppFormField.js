@@ -4,8 +4,9 @@ import AppTextInput from "../AppTextInput";
 import ErrorMessage from "./ErrorMessage";
 
 function AppFormField({ name, width = "100%", ...otherProps }) {
-  const { errors, handleBlur, handleChange, touched, values } =
+  const { errors, handleBlur, handleChange, submitCount, touched, values } =
     useFormikContext();
+  const showError = touched[name] || submitCount > 0;
 
   return (
     <>
@@ -16,7 +17,7 @@ function AppFormField({ name, width = "100%", ...otherProps }) {
         width={width}
         {...otherProps}
       />
-      <ErrorMessage error={errors[name]} visible={touched[name]} />
+      <ErrorMessage error={errors[name]} visible={showError} />
     </>
   );
 }
