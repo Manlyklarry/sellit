@@ -2,11 +2,16 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
 
-import AppForm from "../components/forms/AppForm";
-import AppFormField from "../components/forms/AppFormField";
-import AppFormPicker from "../components/forms/AppFormPicker";
-import SubmitButton from "../components/forms/SubmitButton";
+import {
+  AppForm,
+  AppFormField,
+  AppFormPicker,
+  FormImagePicker,
+  SubmitButton,
+} from "../components/forms";
+import LocationPicker from "../components/LocationPicker";
 import colors from "../config/colors";
+import useLocation from "../hooks/useLocation";
 
 const categories = [
   {
@@ -47,6 +52,9 @@ const categories = [
 ];
 
 const validationSchema = Yup.object().shape({
+  images: Yup.array()
+    .min(1, "Please add at least one photo.")
+    .max(6, "You can add up to 6 photos."),
   title: Yup.string()
     .required("Title is required.")
     .min(3, "Title must be at least 3 characters.")
@@ -66,6 +74,34 @@ const validationSchema = Yup.object().shape({
 });
 
 function ListingEditScreen() {
+  const {
+    address,
+    error: locationError,
+    geocoding,
+    getLocation,
+    loading: locationLoading,
+    location,
+  } =
+    useLocation();
+
+  const handleSubmit = async (values) => {
+    const locationSnapshot = location ? null : await getLocation();
+    const currentLocation = location || locationSnapshot?.location;
+    const currentAddress = locationSnapshot?.address || address;
+    const listing = {
+      ...values,
+      location: currentLocation
+        ? {
+            address: currentAddress,
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude,
+          }
+        : null,
+    };
+
+    console.log("New listing", listing);
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <ScrollView
@@ -76,14 +112,20 @@ function ListingEditScreen() {
 
         <AppForm
           initialValues={{
+            images: [],
             title: "",
             price: "",
             category: null,
             description: "",
           }}
-          onSubmit={(values) => console.log("New listing", values)}
+          onSubmit={handleSubmit}
           validationSchema={validationSchema}
         >
+          <View style={styles.section}>
+            <Text style={styles.label}>Photos</Text>
+            <FormImagePicker name="images" />
+          </View>
+
           <AppFormField
             autoCorrect={false}
             icon="format-title"
@@ -112,6 +154,14 @@ function ListingEditScreen() {
               textAlignVertical="top"
             />
           </View>
+          <LocationPicker
+            address={address}
+            error={locationError}
+            loading={locationLoading || geocoding}
+            location={location}
+            onRefresh={getLocation}
+            refreshing={locationLoading || geocoding}
+          />
           <SubmitButton title="Post" />
         </AppForm>
       </ScrollView>
@@ -129,9 +179,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 20,
   },
+  label: {
+    color: colors.black,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.light,
+  },
+  section: {
+    marginBottom: 10,
   },
   scrollContent: {
     padding: 20,
@@ -139,4 +198,3 @@ const styles = StyleSheet.create({
 });
 
 export default ListingEditScreen;
-

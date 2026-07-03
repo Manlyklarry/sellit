@@ -13,9 +13,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Sellit to use your camera to add item photos.",
+        "NSLocationWhenInUseUsageDescription": "Allow Sellit to attach your location to new listings.",
+        "NSPhotoLibraryUsageDescription": "Allow Sellit to access your photos so you can add item pictures."
+      }
     },
     "android": {
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

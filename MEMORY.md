@@ -23,11 +23,15 @@
 - Barrel exports exist at `app/screens/index.js`, `app/components/index.js`,
   and `app/components/forms/index.js` to help VS Code suggest component imports.
 - `App.js` wraps the app in `GestureHandlerRootView` and `SafeAreaProvider`.
-  It currently renders `AccountScreen` via `import { AccountScreen } from
-  "./app/screens";`.
-- `WelcomeScreen` lives at `app/screens/welcomeScreen.js`.
-- `ViewImageScreen` lives at `app/screens/viewImageScreen.js`.
+  It currently renders `ListingEditScreen` while listing creation is being
+  built out.
+- `WelcomeScreen` lives at `app/screens/WelcomeScreen.js`.
+- `ViewImageScreen` lives at `app/screens/ViewImageScreen.js`.
 - `ListingEditScreen` is the add-new-listing form screen.
+- `ListingEditScreen` uses `FormImagePicker`, captures selected image URIs,
+  shows a live map preview via `LocationPicker`, reverse-geocodes the current
+  location into a readable address, and attaches address plus coordinates to
+  submitted listings when location permission is granted.
 - `LoginScreen` and `RegisterScreen` exist and use Formik/Yup validation.
 
 ## UI Decisions
@@ -58,7 +62,7 @@
   menu, message header, conversation count, unread dots, timestamps, empty
   state, swipe-to-delete, and pull-to-refresh.
 - Pull-to-refresh is implemented on user-data lists where useful:
-  `listingsScreen.js` listings and `AccountScreen.js` messages. It is not used
+  `ListingsScreen.js` listings and `AccountScreen.js` messages. It is not used
   on the static account menu or picker modal list.
 
 ## Forms
@@ -71,6 +75,8 @@
 - `RegisterScreen` validates name, email, and password.
 - `ListingEditScreen` validates title, price, category, and description. The
   price input placeholder is `Price Ghc`.
+- `ListingEditScreen` also validates at least one listing photo and allows up
+  to six photos.
 
 ## Assets and Sample Data
 
@@ -158,8 +164,3 @@
   lesson.
 - Record material course-to-current-tooling substitutions here so later lessons
   use the same context and conventions.
-
-## Required Documentation
-
-Read the exact Expo SDK 54 documentation before writing code:
-https://docs.expo.dev/versions/v54.0.0/
