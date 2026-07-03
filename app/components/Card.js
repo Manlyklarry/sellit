@@ -7,8 +7,12 @@ function Card({ image, subTitle, title }) {
     <View style={styles.card}>
       <Image source={image} style={styles.image} />
       <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subTitle}>{subTitle}</Text>
+        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+          {title}
+        </Text>
+        <Text style={styles.subTitle} numberOfLines={1} ellipsizeMode="tail">
+          {subTitle}
+        </Text>
       </View>
     </View>
   );
@@ -34,6 +38,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.black,
     marginBottom: 7,
+    lineHeight: 20,
   },
 });
 

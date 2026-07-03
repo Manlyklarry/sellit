@@ -13,7 +13,9 @@ function ListingDetailsScreen() {
       />
 
       <View style={styles.detailsContainer}>
-        <Text style={styles.title}>Chair and laundry basket</Text>
+        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+          Chair and laundry basket
+        </Text>
         <Text style={styles.price}>{formatCurrency(100)}</Text>
       </View>
 
@@ -22,6 +24,8 @@ function ListingDetailsScreen() {
           title="MANLYKLARRY"
           subTitle="5 Listings"
           image={require("../assets/profiles/larry.jpeg")}
+          showChevron
+          onPress={() => console.log("seller")}
         />
       </View>
     </View>

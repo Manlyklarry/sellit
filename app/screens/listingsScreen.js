@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -39,12 +40,21 @@ const listings = [
 ];
 
 function ListingsScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <FlatList
         data={listings}
         keyExtractor={(listing) => listing.id.toString()}
         contentContainerStyle={styles.list}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         renderItem={({ item }) => (
           <View style={styles.cardContainer}>
             <Card

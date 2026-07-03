@@ -1,3 +1,8 @@
 {
-  "terminal.integrated.enablePersistentSessions": false
+  "editor.tabCompletion": "on",
+  "javascript.suggest.autoImports": true,
+  "typescript.suggest.autoImports": true,
+  "terminal.integrated.enablePersistentSessions": false,
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative"
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Icon from "../components/Icon";
@@ -31,26 +31,39 @@ const initialMessages = [
   {
     id: 1,
     title: "Kwame Mensah",
-    subTitle: "Is the bicycle still available?",
+    subTitle:
+      "Is the bicycle still available? I can come by this evening if that works for you.",
+    time: "2m",
+    unread: true,
     image: require("../assets/profiles/larry.jpeg"),
   },
   {
     id: 2,
     title: "Ama Boateng",
     subTitle: "Can you deliver the kente cloth today?",
+    time: "1h",
+    unread: true,
   },
   {
     id: 3,
     title: "Kofi Addo",
     subTitle: "I can pick up the charcoal stove this evening.",
+    time: "Yesterday",
   },
 ];
 
 function AccountScreen() {
   const [messages, setMessages] = useState(initialMessages);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleDelete = (message) => {
     setMessages(messages.filter((item) => item.id !== message.id));
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setMessages(initialMessages);
+    setRefreshing(false);
   };
 
   return (
@@ -60,6 +73,8 @@ function AccountScreen() {
           title="MANLYKLARRY"
           subTitle="5 Listings"
           image={require("../assets/profiles/larry.jpeg")}
+          showChevron
+          onPress={() => console.log("profile")}
         />
       </View>
 
@@ -88,11 +103,33 @@ function AccountScreen() {
         data={messages}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={ListItemSeparator}
+        ListHeaderComponent={
+          <View style={styles.messagesHeader}>
+            <Text style={styles.messagesTitle}>Messages</Text>
+            <Text style={styles.messagesMeta}>
+              {messages.length} conversations
+            </Text>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No messages</Text>
+            <Text style={styles.emptyText}>
+              Buyer conversations will appear here.
+            </Text>
+          </View>
+        }
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         renderItem={({ item }) => (
           <ListItem
             title={item.title}
             subTitle={item.subTitle}
             image={item.image}
+            rightText={item.time}
+            showBadge={item.unread}
+            showChevron
+            subTitleNumberOfLines={2}
             renderRightActions={() => (
               <ListItemDeleteAction onPress={() => handleDelete(item)} />
             )}
@@ -114,6 +151,33 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     marginBottom: 20,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    padding: 28,
+  },
+  emptyText: {
+    color: colors.medium,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  emptyTitle: {
+    color: colors.black,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  messagesHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+  },
+  messagesMeta: {
+    color: colors.medium,
+    marginTop: 2,
+  },
+  messagesTitle: {
+    color: colors.black,
+    fontSize: 22,
+    fontWeight: "700",
   },
 });
 

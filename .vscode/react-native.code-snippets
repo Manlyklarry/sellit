@@ -1,0 +1,24 @@
+{
+  "React Native Function Component": {
+    "scope": "javascript,javascriptreact",
+    "prefix": "rnfc",
+    "body": [
+      "import { StyleSheet, View } from \"react-native\";",
+      "",
+      "function ${1:${TM_FILENAME_BASE}}() {",
+      "  return (",
+      "    <View style={styles.container}>",
+      "      $0",
+      "    </View>",
+      "  );",
+      "}",
+      "",
+      "const styles = StyleSheet.create({",
+      "  container: {},",
+      "});",
+      "",
+      "export default ${1:${TM_FILENAME_BASE}};"
+    ],
+    "description": "Create a React Native function component"
+  }
+}

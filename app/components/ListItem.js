@@ -9,9 +9,13 @@ function ListItem({
   image,
   onPress,
   renderRightActions,
+  rightText,
+  showBadge = false,
   showChevron = false,
   subTitle,
+  subTitleNumberOfLines = 2,
   title,
+  titleNumberOfLines = 1,
 }) {
   const content = (
     <Pressable
@@ -31,10 +35,26 @@ function ListItem({
       )}
 
       <View style={styles.detailsContainer}>
-        <Text style={styles.title}>{title}</Text>
-        {subTitle ? <Text style={styles.subTitle}>{subTitle}</Text> : null}
+        <Text
+          style={styles.title}
+          numberOfLines={titleNumberOfLines}
+          ellipsizeMode="tail"
+        >
+          {title}
+        </Text>
+        {subTitle ? (
+          <Text
+            style={styles.subTitle}
+            numberOfLines={subTitleNumberOfLines}
+            ellipsizeMode="tail"
+          >
+            {subTitle}
+          </Text>
+        ) : null}
       </View>
 
+      {rightText ? <Text style={styles.rightText}>{rightText}</Text> : null}
+      {showBadge ? <View style={styles.badge} /> : null}
       {showChevron ? (
         <MaterialCommunityIcons
           name="chevron-right"
@@ -60,10 +80,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.white,
     padding: 15,
+    minHeight: 78,
+  },
+  badge: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    marginLeft: 8,
   },
   detailsContainer: {
     flex: 1,
     marginLeft: 10,
+    minWidth: 0,
   },
   icon: {
     marginRight: 0,
@@ -89,10 +118,19 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
   },
+  rightText: {
+    color: colors.medium,
+    fontSize: 12,
+    marginLeft: 8,
+    maxWidth: 54,
+  },
   subTitle: {
     color: colors.medium,
+    lineHeight: 19,
+    marginTop: 3,
   },
   title: {
+    fontSize: 16,
     fontWeight: "500",
   },
 });
