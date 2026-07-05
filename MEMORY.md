@@ -123,6 +123,10 @@
   saved listings, categories, or location/search APIs, so response handling,
   base URL config, timeouts, headers, transforms, and normalized errors stay
   centralized.
+- Better Auth uses a dynamic `trustedOrigins` function in `backend/src/auth.js`
+  so Expo dev origins on private LAN IPs with ports `8081` or `19006` remain
+  trusted when the Metro host IP changes. Keep this in sync with backend CORS
+  private-network dev origin handling.
 - Start Android development with `npm run android` or manually with
   `npx expo start` when the user wants manual control.
 - Before starting any Expo or Metro process, check whether an Expo dev server
