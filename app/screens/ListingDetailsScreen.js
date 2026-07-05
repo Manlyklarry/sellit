@@ -4,19 +4,24 @@ import ListItem from "../components/ListItem";
 import colors from "../config/colors";
 import formatCurrency from "../utils/currency";
 
-function ListingDetailsScreen() {
+const defaultListing = {
+  title: "Chair and laundry basket",
+  price: 100,
+  image: require("../assets/listings/chair-laundry-basket.png"),
+};
+
+function ListingDetailsScreen({ route }) {
+  const listing = route.params?.listing || defaultListing;
+
   return (
     <View style={styles.screen}>
-      <Image
-        source={require("../assets/listings/chair-laundry-basket.png")}
-        style={styles.image}
-      />
+      <Image source={listing.image} style={styles.image} />
 
       <View style={styles.detailsContainer}>
         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
-          Chair and laundry basket
+          {listing.title}
         </Text>
-        <Text style={styles.price}>{formatCurrency(100)}</Text>
+        <Text style={styles.price}>{formatCurrency(listing.price)}</Text>
       </View>
 
       <View style={styles.userContainer}>

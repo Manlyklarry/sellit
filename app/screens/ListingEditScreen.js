@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
 
+import { addListing } from "../api/listings";
 import {
   AppForm,
   AppFormField,
@@ -10,6 +12,7 @@ import {
   SubmitButton,
 } from "../components/forms";
 import LocationPicker from "../components/LocationPicker";
+import UploadScreen from "../components/UploadScreen";
 import colors from "../config/colors";
 import useLocation from "../hooks/useLocation";
 
@@ -49,6 +52,13 @@ const categories = [
     icon: "basketball",
     backgroundColor: "#45aaf2",
   },
+  {
+    label: "Others",
+    value: 6,
+    description: "Anything that does not fit the other categories",
+    icon: "dots-horizontal-circle",
+    backgroundColor: colors.medium,
+  },
 ];
 
 const validationSchema = Yup.object().shape({
@@ -74,7 +84,20 @@ const validationSchema = Yup.object().shape({
     .max(500, "Description must be 500 characters or less."),
 });
 
+const initialValues = {
+  images: [],
+  title: "",
+  price: "",
+  category: null,
+  description: "",
+};
+
 function ListingEditScreen() {
+  const closeUploadTimer = useRef(null);
+  const [uploadDone, setUploadDone] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadVisible, setUploadVisible] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const {
     address,
     error: locationError,
@@ -85,7 +108,14 @@ function ListingEditScreen() {
   } =
     useLocation();
 
-  const handleSubmit = async (values) => {
+  useEffect(
+    () => () => {
+      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
+    },
+    []
+  );
+
+  const handleSubmit = async (values, { resetForm }) => {
     const locationSnapshot = location ? null : await getLocation();
     const currentLocation = location || locationSnapshot?.location;
     const currentAddress = locationSnapshot?.address || address;
@@ -100,11 +130,43 @@ function ListingEditScreen() {
         : null,
     };
 
-    console.log("New listing", listing);
+    try {
+      setUploadError(null);
+      setUploadDone(false);
+      setUploadProgress(0);
+      setUploadVisible(true);
+
+      await addListing(listing, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      setUploadProgress(1);
+      setUploadDone(true);
+      resetForm({ values: initialValues });
+
+      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
+      closeUploadTimer.current = setTimeout(() => {
+        setUploadVisible(false);
+        setUploadDone(false);
+        setUploadProgress(0);
+        closeUploadTimer.current = null;
+      }, 2400);
+    } catch (error) {
+      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
+      setUploadVisible(false);
+      setUploadDone(false);
+      setUploadProgress(0);
+      setUploadError(error.message);
+    }
   };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      <UploadScreen
+        done={uploadDone}
+        progress={uploadProgress}
+        visible={uploadVisible}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
@@ -112,16 +174,11 @@ function ListingEditScreen() {
         <Text style={styles.heading}>New Listing</Text>
 
         <AppForm
-          initialValues={{
-            images: [],
-            title: "",
-            price: "",
-            category: null,
-            description: "",
-          }}
+          initialValues={initialValues}
           onSubmit={handleSubmit}
           validationSchema={validationSchema}
         >
+          {uploadError ? <Text style={styles.error}>{uploadError}</Text> : null}
           <View style={styles.section}>
             <Text style={styles.label}>Photos</Text>
             <FormImagePicker imageLimit={6} name="images" />
@@ -174,6 +231,12 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     marginTop: 0,
   },
+  error: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
   heading: {
     color: colors.black,
     fontSize: 24,
@@ -195,6 +258,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 120,
   },
 });
 

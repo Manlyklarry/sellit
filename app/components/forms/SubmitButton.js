@@ -7,6 +7,7 @@ function SubmitButton({ title }) {
 
   return (
     <AppButton
+      disabled={isSubmitting}
       title={isSubmitting ? "Please wait..." : title}
       onPress={handleSubmit}
     />

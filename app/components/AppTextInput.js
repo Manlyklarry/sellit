@@ -1,9 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import colors from "../config/colors";
 
 function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const isPassword = otherProps.secureTextEntry;
+
   return (
     <View
       style={[
@@ -28,7 +32,23 @@ function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
           otherProps.multiline && styles.multilineTextInput,
         ]}
         {...otherProps}
+        secureTextEntry={isPassword && !passwordVisible}
       />
+      {isPassword ? (
+        <Pressable
+          accessibilityLabel={passwordVisible ? "Hide password" : "Show password"}
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={() => setPasswordVisible((visible) => !visible)}
+          style={styles.passwordToggle}
+        >
+          <MaterialCommunityIcons
+            name={passwordVisible ? "eye-off" : "eye"}
+            color={colors.medium}
+            size={22}
+          />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -54,6 +74,10 @@ const styles = StyleSheet.create({
   },
   multilineTextInput: {
     minHeight: 96,
+  },
+  passwordToggle: {
+    marginLeft: 10,
+    padding: 4,
   },
   textInput: {
     flex: 1,

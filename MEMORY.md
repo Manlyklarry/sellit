@@ -4,6 +4,9 @@
 
 - Expo SDK 54 (`expo` `~54.0.34`)
 - React 19.1 and React Native 0.81.5
+- Expo SDK 54 docs were checked at
+  `https://docs.expo.dev/versions/v54.0.0/`; Expo 54 targets React Native
+  0.81, React 19.1.0, and Node 20.19.x minimum.
 - Entry point: `index.js`; root component: `App.js`
 - Form stack: `formik` for form state and `yup` for validation.
 - `lodash` is a direct dependency because Formik imports lodash submodules that
@@ -77,6 +80,10 @@
   price input placeholder is `Price Ghc`.
 - `ListingEditScreen` also validates at least one listing photo and allows up
   to six photos.
+- Listing submissions post multipart form data through `app/api/listings.js`.
+  The backend accepts up to six image files, validates positive prices and
+  category shape before creating records, and deletes already-written upload
+  files when validation fails.
 
 ## Assets and Sample Data
 
@@ -110,6 +117,12 @@
 
 ## Development
 
+- API client decision: keep the current lightweight `fetch`-based API layer for
+  the small auth surface. Switch to `apisauce` once the backend grows beyond
+  auth into more features such as listings, image uploads, messages, profiles,
+  saved listings, categories, or location/search APIs, so response handling,
+  base URL config, timeouts, headers, transforms, and normalized errors stay
+  centralized.
 - Start Android development with `npm run android` or manually with
   `npx expo start` when the user wants manual control.
 - Before starting any Expo or Metro process, check whether an Expo dev server
@@ -132,6 +145,9 @@
 - Keep Metro running in a visible terminal when console output is needed.
 - Verify code changes with `npx expo export` unless the task specifically needs
   device runtime validation.
+- Current local Node observed during the July 2026 refactor was v22.17.0.
+  Expo SDK 54 requires at least Node 20.19.x; if Expo tooling behaves oddly,
+  re-check under the project-standard Node 20 line before deeper debugging.
 - When making commits from this machine for this project, push them to
   `origin/main` after the commit unless the user says not to push.
 - The `Pixel_7` AVD was repaired on 2026-06-30: it now cold-boots from the

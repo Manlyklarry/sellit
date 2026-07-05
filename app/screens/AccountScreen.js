@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { signOut } from "../api/auth";
+import AppActivityIndicator from "../components/AppActivityIndicator";
 import Icon from "../components/Icon";
 import ListItem from "../components/ListItem";
 import ListItemDeleteAction from "../components/ListItemDeleteAction";
 import ListItemSeparator from "../components/ListItemSeparator";
 import colors from "../config/colors";
+import { ROOT_ROUTES, TAB_ROUTES } from "../navigation/routes";
 
 const menuItems = [
   {
@@ -52,7 +55,7 @@ const initialMessages = [
   },
 ];
 
-function AccountScreen() {
+function AccountScreen({ navigation }) {
   const [messages, setMessages] = useState(initialMessages);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -63,7 +66,20 @@ function AccountScreen() {
   const handleRefresh = () => {
     setRefreshing(true);
     setMessages(initialMessages);
-    setRefreshing(false);
+    setTimeout(() => setRefreshing(false), 900);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.log("Logout failed", error.message);
+    }
+
+    navigation.getParent()?.reset({
+      index: 0,
+      routes: [{ name: ROOT_ROUTES.AUTH }],
+    });
   };
 
   return (
@@ -93,23 +109,47 @@ function AccountScreen() {
                   backgroundColor={item.icon.backgroundColor}
                 />
               }
-              onPress={() => console.log(item.title)}
+              onPress={() => {
+                if (item.title === "My Listings") {
+                  navigation.navigate(TAB_ROUTES.FEED);
+                  return;
+                }
+
+                console.log(item.title);
+              }}
             />
           )}
+        />
+      </View>
+
+      <View style={styles.logoutContainer}>
+        <ListItem
+          title="Logout"
+          showChevron
+          IconComponent={
+            <Icon name="logout" backgroundColor={colors.danger} />
+          }
+          onPress={handleLogout}
         />
       </View>
 
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.messagesList}
         ItemSeparatorComponent={ListItemSeparator}
         ListHeaderComponent={
-          <View style={styles.messagesHeader}>
-            <Text style={styles.messagesTitle}>Messages</Text>
-            <Text style={styles.messagesMeta}>
-              {messages.length} conversations
-            </Text>
-          </View>
+          <>
+            <View style={styles.messagesHeader}>
+              <Text style={styles.messagesTitle}>Messages</Text>
+              <Text style={styles.messagesMeta}>
+                {messages.length} conversations
+              </Text>
+            </View>
+            {refreshing ? (
+              <AppActivityIndicator compact message="Refreshing messages..." />
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -119,8 +159,15 @@ function AccountScreen() {
             </Text>
           </View>
         }
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={handleRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
+          />
+        }
         renderItem={({ item }) => (
           <ListItem
             title={item.title}
@@ -152,6 +199,9 @@ const styles = StyleSheet.create({
   menuContainer: {
     marginBottom: 20,
   },
+  logoutContainer: {
+    marginBottom: 20,
+  },
   emptyContainer: {
     alignItems: "center",
     padding: 28,
@@ -169,6 +219,9 @@ const styles = StyleSheet.create({
   messagesHeader: {
     paddingHorizontal: 20,
     paddingBottom: 10,
+  },
+  messagesList: {
+    paddingBottom: 120,
   },
   messagesMeta: {
     color: colors.medium,

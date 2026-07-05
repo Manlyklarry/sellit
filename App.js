@@ -1,14 +1,16 @@
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
-import { ListingEditScreen } from "./app/screens";
+import RootNavigator from "./app/navigation/RootNavigator";
 
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <ListingEditScreen />
+        <RootNavigator />
+        <StatusBar style="dark" />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

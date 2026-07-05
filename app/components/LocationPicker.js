@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
+import AppActivityIndicator from "./AppActivityIndicator";
 import colors from "../config/colors";
 
 function LocationPicker({
@@ -36,15 +37,26 @@ function LocationPicker({
         <Pressable
           style={({ pressed }) => [
             styles.refreshButton,
+            refreshing && styles.refreshButtonActive,
             pressed && styles.pressed,
           ]}
+          disabled={refreshing}
           onPress={onRefresh}
         >
-          <MaterialCommunityIcons
-            name="crosshairs-gps"
-            color={colors.primary}
-            size={20}
-          />
+          {refreshing ? (
+            <AppActivityIndicator
+              compact
+              message=""
+              size={30}
+              style={styles.refreshAnimation}
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name="crosshairs-gps"
+              color={colors.primary}
+              size={20}
+            />
+          )}
           <Text style={styles.refreshText}>
             {refreshing ? "Updating" : "Update"}
           </Text>
@@ -64,11 +76,15 @@ function LocationPicker({
         </MapView>
       ) : (
         <View style={styles.mapPlaceholder}>
-          <MaterialCommunityIcons
-            name="map-marker-off"
-            color={colors.medium}
-            size={34}
-          />
+          {loading ? (
+            <AppActivityIndicator message="Finding your location..." />
+          ) : (
+            <MaterialCommunityIcons
+              name="map-marker-off"
+              color={colors.medium}
+              size={34}
+            />
+          )}
         </View>
       )}
 
@@ -132,6 +148,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 6,
     paddingLeft: 10,
+  },
+  refreshButtonActive: {
+    opacity: 0.85,
+  },
+  refreshAnimation: {
+    marginVertical: -8,
+    paddingVertical: 0,
   },
   refreshText: {
     color: colors.primary,

@@ -2,14 +2,16 @@ import { Pressable, StyleSheet, Text } from "react-native";
 
 import colors from "../config/colors";
 
-function AppButton({ color = "primary", onPress, title }) {
+function AppButton({ color = "primary", disabled = false, onPress, title }) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: colors[color] },
+        disabled && styles.disabled,
         pressed && styles.pressed,
       ]}
+      disabled={disabled}
       onPress={onPress}
     >
       <Text style={styles.text}>{title}</Text>
@@ -25,6 +27,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginVertical: 10,
+  },
+  disabled: {
+    opacity: 0.55,
   },
   pressed: {
     opacity: 0.75,

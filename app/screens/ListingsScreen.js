@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
 import colors from "../config/colors";
+import { FEED_ROUTES } from "../navigation/routes";
 import formatCurrency from "../utils/currency";
 
 const listings = [
@@ -39,12 +41,12 @@ const listings = [
   },
 ];
 
-function ListingsScreen() {
+function ListingsScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    setRefreshing(false);
+    setTimeout(() => setRefreshing(false), 900);
   };
 
   return (
@@ -53,14 +55,29 @@ function ListingsScreen() {
         data={listings}
         keyExtractor={(listing) => listing.id.toString()}
         contentContainerStyle={styles.list}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        ListHeaderComponent={
+          refreshing ? (
+            <AppActivityIndicator compact message="Refreshing listings..." />
+          ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={handleRefresh}
+            tintColor="transparent"
+            colors={["transparent"]}
+            progressBackgroundColor="transparent"
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.cardContainer}>
             <Card
               title={item.title}
               subTitle={formatCurrency(item.price)}
               image={item.image}
+              onPress={() =>
+                navigation.navigate(FEED_ROUTES.DETAILS, { listing: item })
+              }
             />
           </View>
         )}
@@ -76,6 +93,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 20,
+    paddingBottom: 120,
   },
   cardContainer: {
     marginBottom: 20,

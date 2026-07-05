@@ -1,10 +1,13 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import colors from "../config/colors";
 
-function Card({ image, subTitle, title }) {
+function Card({ image, onPress, subTitle, title }) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={onPress}
+    >
       <Image source={image} style={styles.image} />
       <View style={styles.detailsContainer}>
         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
@@ -14,7 +17,7 @@ function Card({ image, subTitle, title }) {
           {subTitle}
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -30,6 +33,10 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: 200,
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.99 }],
   },
   subTitle: {
     color: colors.secondary,
