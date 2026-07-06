@@ -43,6 +43,27 @@ const upload = multer({
   },
 });
 
+router.get("/", async (_req, res, next) => {
+  try {
+    const listings = await prisma.listing.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        images: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+    });
+
+    res.json({ listings: listings.map(formatListing) });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/", upload.array("images", 6), async (req, res, next) => {
   try {
     const category = parseJsonField(req.body.category);
@@ -97,6 +118,30 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
     next(error);
   }
 });
+
+function formatListing(listing) {
+  const images = listing.images.map((image) => ({
+    id: image.id,
+    filename: image.filename,
+    mimetype: image.mimetype,
+    size: image.size,
+    url: `/uploads/listings/${image.filename}`,
+  }));
+
+  return {
+    id: listing.id,
+    title: listing.title,
+    price: listing.price.toString(),
+    categoryId: listing.categoryId,
+    categoryLabel: listing.categoryLabel,
+    description: listing.description,
+    location: listing.location,
+    createdAt: listing.createdAt,
+    updatedAt: listing.updatedAt,
+    images,
+    imageUrl: images[0]?.url || null,
+  };
+}
 
 router.use((error, _req, res, next) => {
   if (error instanceof multer.MulterError || error.statusCode === 400) {

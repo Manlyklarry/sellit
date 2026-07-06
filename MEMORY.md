@@ -67,6 +67,10 @@
 - Pull-to-refresh is implemented on user-data lists where useful:
   `ListingsScreen.js` listings and `AccountScreen.js` messages. It is not used
   on the static account menu or picker modal list.
+- `ListingsScreen.js` loads listings from `GET /api/listings`, caches the
+  latest successful response in `AsyncStorage`, and falls back to that cached
+  feed when the API is unreachable. The local sample listings remain only as a
+  first-run fallback when neither the backend nor a cache is available.
 
 ## Forms
 
@@ -84,6 +88,9 @@
   The backend accepts up to six image files, validates positive prices and
   category shape before creating records, and deletes already-written upload
   files when validation fails.
+- The backend serves uploaded listing images from `/uploads/...` and exposes
+  `GET /api/listings` for the mobile feed. Mobile listing reads normalize those
+  image paths to absolute React Native `{ uri }` image sources before caching.
 
 ## Assets and Sample Data
 

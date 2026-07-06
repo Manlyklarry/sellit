@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import path from "node:path";
+
 import cors from "cors";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
@@ -36,6 +38,7 @@ app.use(
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use(express.json());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/health", async (_req, res, next) => {
   try {

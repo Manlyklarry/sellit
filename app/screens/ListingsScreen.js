@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { getListings } from "../api/listings";
 import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
 import colors from "../config/colors";
@@ -42,23 +43,72 @@ const listings = [
 ];
 
 function ListingsScreen({ navigation }) {
+  const [feedListings, setFeedListings] = useState(listings);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [usingCache, setUsingCache] = useState(false);
+
+  const loadListings = useCallback(async ({ refreshingFeed = false } = {}) => {
+    if (refreshingFeed) {
+      setRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+
+    try {
+      const result = await getListings();
+
+      if (result.data.length) {
+        setFeedListings(result.data);
+      }
+
+      setError(result.error?.message || null);
+      setUsingCache(result.stale);
+    } catch (loadError) {
+      setError(loadError.message);
+      setUsingCache(false);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadListings();
+  }, [loadListings]);
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 900);
+    loadListings({ refreshingFeed: true });
   };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      {isLoading ? (
+        <AppActivityIndicator compact message="Loading listings..." />
+      ) : null}
       <FlatList
-        data={listings}
+        data={feedListings}
         keyExtractor={(listing) => listing.id.toString()}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          refreshing ? (
-            <AppActivityIndicator compact message="Refreshing listings..." />
-          ) : null
+          <>
+            {refreshing ? (
+              <AppActivityIndicator compact message="Refreshing listings..." />
+            ) : null}
+            {usingCache ? (
+              <View style={styles.notice}>
+                <Text style={styles.noticeText}>
+                  You're offline. Showing the latest saved listings.
+                </Text>
+              </View>
+            ) : null}
+            {error && !usingCache ? (
+              <View style={styles.errorNotice}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+          </>
         }
         refreshControl={
           <RefreshControl
@@ -69,18 +119,24 @@ function ListingsScreen({ navigation }) {
             progressBackgroundColor="transparent"
           />
         }
-        renderItem={({ item }) => (
-          <View style={styles.cardContainer}>
-            <Card
-              title={item.title}
-              subTitle={formatCurrency(item.price)}
-              image={item.image}
-              onPress={() =>
-                navigation.navigate(FEED_ROUTES.DETAILS, { listing: item })
-              }
-            />
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const image = item.image || listings[0].image;
+
+          return (
+            <View style={styles.cardContainer}>
+              <Card
+                title={item.title}
+                subTitle={formatCurrency(item.price)}
+                image={image}
+                onPress={() =>
+                  navigation.navigate(FEED_ROUTES.DETAILS, {
+                    listing: { ...item, image },
+                  })
+                }
+              />
+            </View>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -97,6 +153,26 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     marginBottom: 20,
+  },
+  errorNotice: {
+    backgroundColor: colors.danger,
+    borderRadius: 8,
+    marginBottom: 20,
+    padding: 12,
+  },
+  errorText: {
+    color: colors.white,
+    fontWeight: "600",
+  },
+  notice: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    marginBottom: 20,
+    padding: 12,
+  },
+  noticeText: {
+    color: colors.medium,
+    fontWeight: "600",
   },
 });
 

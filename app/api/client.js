@@ -1,5 +1,7 @@
 import api from "../config/api";
 
+const defaultTimeout = 10000;
+
 function createFormData(data) {
   const formData = new FormData();
 
@@ -13,6 +15,42 @@ function createFormData(data) {
   });
 
   return formData;
+}
+
+async function get(endpoint, { timeout = defaultTimeout } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(`${api.baseUrl}${endpoint}`, {
+      method: "GET",
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        Origin: api.origin,
+      },
+    });
+    const text = await response.text();
+    const data = parseJson(text);
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error || data?.message || `Request failed with status ${response.status}.`
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      throw error;
+    }
+
+    throw new Error(
+      `Could not reach the backend at ${api.baseUrl}. Make sure npm run backend:dev is running and this device is on the same network.`
+    );
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function postMultipart(endpoint, formData, onUploadProgress) {
@@ -63,8 +101,19 @@ function postMultipart(endpoint, formData, onUploadProgress) {
   });
 }
 
+function parseJson(text) {
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 const client = {
   createFormData,
+  get,
   postMultipart,
 };
 
