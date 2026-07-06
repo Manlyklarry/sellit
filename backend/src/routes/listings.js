@@ -73,7 +73,7 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
     if (!req.body.title || !req.body.description || !isValidCategory(category)) {
       await deleteUploadedFiles(req.files);
       return res.status(400).json({
-        error: "Title, price, category, and description are required.",
+        error: "Name of item, price, category, and description are required.",
       });
     }
 

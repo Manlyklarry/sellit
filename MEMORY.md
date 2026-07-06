@@ -80,8 +80,9 @@
   touched or the form is submitted.
 - `LoginScreen` validates email and password.
 - `RegisterScreen` validates name, email, and password.
-- `ListingEditScreen` validates title, price, category, and description. The
-  price input placeholder is `Price Ghc`.
+- `ListingEditScreen` labels the listing title field as `Name of item` in the
+  form and validation copy. It validates name of item, price, category, and
+  description. The price input placeholder is `Price Ghc`.
 - `ListingEditScreen` also validates at least one listing photo and allows up
   to six photos.
 - Listing submissions post multipart form data through `app/api/listings.js`.

@@ -67,9 +67,9 @@ const validationSchema = Yup.object().shape({
     .max(6, "You can add up to 6 photos.")
     .required("Please add at least one photo."),
   title: Yup.string()
-    .required("Title is required.")
-    .min(3, "Title must be at least 3 characters.")
-    .max(80, "Title must be 80 characters or less."),
+    .required("Name of item is required.")
+    .min(3, "Name of item must be at least 3 characters.")
+    .max(80, "Name of item must be 80 characters or less."),
   price: Yup.number()
     .transform((value, originalValue) =>
       originalValue === "" ? undefined : value
@@ -188,7 +188,7 @@ function ListingEditScreen() {
             autoCorrect={false}
             icon="format-title"
             name="title"
-            placeholder="Title"
+            placeholder="Name of item"
           />
           <AppFormField
             icon="cash"
