@@ -119,6 +119,34 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
   }
 });
 
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const listing = await prisma.listing.findUnique({
+      where: {
+        id: req.params.id,
+      },
+      include: {
+        images: true,
+      },
+    });
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found." });
+    }
+
+    await prisma.listing.delete({
+      where: {
+        id: listing.id,
+      },
+    });
+    await deleteUploadedFiles(listing.images);
+
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
 function formatListing(listing) {
   const images = listing.images.map((image) => ({
     id: image.id,
@@ -178,7 +206,9 @@ function isValidCategory(category) {
 }
 
 async function deleteUploadedFiles(files = []) {
-  await Promise.allSettled(files.map((file) => fs.promises.unlink(file.path)));
+  await Promise.allSettled(
+    files.map((file) => fs.promises.unlink(path.resolve(process.cwd(), file.path)))
+  );
 }
 
 export default router;

@@ -91,6 +91,9 @@
 - The backend serves uploaded listing images from `/uploads/...` and exposes
   `GET /api/listings` for the mobile feed. Mobile listing reads normalize those
   image paths to absolute React Native `{ uri }` image sources before caching.
+- Listing details can delete backend-backed listings. The mobile app calls
+  `DELETE /api/listings/:id`, prunes the deleted item from the cached feed, and
+  returns to `ListingsScreen` with the item removed from local state.
 
 ## Assets and Sample Data
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getListings } from "../api/listings";
+import { getListings, removeCachedListing } from "../api/listings";
 import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
 import colors from "../config/colors";
@@ -42,7 +42,7 @@ const listings = [
   },
 ];
 
-function ListingsScreen({ navigation }) {
+function ListingsScreen({ navigation, route }) {
   const [feedListings, setFeedListings] = useState(listings);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +77,17 @@ function ListingsScreen({ navigation }) {
   useEffect(() => {
     loadListings();
   }, [loadListings]);
+
+  useEffect(() => {
+    const deletedListingId = route.params?.deletedListingId;
+    if (!deletedListingId) return;
+
+    setFeedListings((currentListings) =>
+      currentListings.filter((listing) => listing.id !== deletedListingId)
+    );
+    removeCachedListing(deletedListingId);
+    navigation.setParams({ deletedListingId: undefined });
+  }, [navigation, route.params?.deletedListingId]);
 
   const handleRefresh = () => {
     loadListings({ refreshingFeed: true });

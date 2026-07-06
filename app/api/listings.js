@@ -74,6 +74,21 @@ export async function getListings() {
   }
 }
 
+export async function deleteListing(id) {
+  await client.delete(`/api/listings/${id}`);
+  await removeCachedListing(id);
+}
+
+export async function removeCachedListing(id) {
+  const cachedListings = await cache.get(listingsCacheKey);
+  if (!cachedListings) return;
+
+  await cache.store(
+    listingsCacheKey,
+    cachedListings.filter((listing) => listing.id !== id)
+  );
+}
+
 function isOffline(networkState) {
   return (
     networkState.isConnected === false ||

@@ -18,12 +18,20 @@ function createFormData(data) {
 }
 
 async function get(endpoint, { timeout = defaultTimeout } = {}) {
+  return request(endpoint, { method: "GET", timeout });
+}
+
+async function del(endpoint, { timeout = defaultTimeout } = {}) {
+  return request(endpoint, { method: "DELETE", timeout });
+}
+
+async function request(endpoint, { method, timeout = defaultTimeout } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
     const response = await fetch(`${api.baseUrl}${endpoint}`, {
-      method: "GET",
+      method,
       signal: controller.signal,
       headers: {
         Accept: "application/json",
@@ -113,6 +121,7 @@ function parseJson(text) {
 
 const client = {
   createFormData,
+  delete: del,
   get,
   postMultipart,
 };

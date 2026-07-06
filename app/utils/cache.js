@@ -23,11 +23,16 @@ async function store(key, data) {
   await AsyncStorage.setItem(getCacheKey(key), JSON.stringify(item));
 }
 
+async function remove(key) {
+  await AsyncStorage.removeItem(getCacheKey(key));
+}
+
 function getCacheKey(key) {
   return `${cachePrefix}${key}`;
 }
 
 export default {
   get,
+  remove,
   store,
 };

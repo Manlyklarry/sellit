@@ -1,7 +1,11 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
+import { deleteListing } from "../api/listings";
+import AppButton from "../components/AppButton";
 import ListItem from "../components/ListItem";
 import colors from "../config/colors";
+import { FEED_ROUTES } from "../navigation/routes";
 import formatCurrency from "../utils/currency";
 
 const defaultListing = {
@@ -10,8 +14,43 @@ const defaultListing = {
   image: require("../assets/listings/chair-laundry-basket.png"),
 };
 
-function ListingDetailsScreen({ route }) {
+function ListingDetailsScreen({ navigation, route }) {
   const listing = route.params?.listing || defaultListing;
+  const [isDeleting, setIsDeleting] = useState(false);
+  const canDelete = typeof listing.id === "string";
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete listing",
+      `Delete "${listing.title}"? This cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: deleteCurrentListing,
+        },
+      ]
+    );
+  };
+
+  const deleteCurrentListing = async () => {
+    setIsDeleting(true);
+
+    try {
+      await deleteListing(listing.id);
+      navigation.navigate(FEED_ROUTES.LISTINGS, {
+        deletedListingId: listing.id,
+      });
+    } catch (error) {
+      Alert.alert("Delete failed", error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -33,6 +72,17 @@ function ListingDetailsScreen({ route }) {
           onPress={() => console.log("seller")}
         />
       </View>
+
+      {canDelete ? (
+        <View style={styles.deleteContainer}>
+          <AppButton
+            color="danger"
+            disabled={isDeleting}
+            onPress={handleDelete}
+            title={isDeleting ? "Deleting..." : "Delete listing"}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -61,6 +111,10 @@ const styles = StyleSheet.create({
   },
   userContainer: {
     marginHorizontal: 20,
+  },
+  deleteContainer: {
+    marginHorizontal: 20,
+    marginTop: 20,
   },
 });
 
