@@ -25,18 +25,31 @@ async function del(endpoint, { timeout = defaultTimeout } = {}) {
   return request(endpoint, { method: "DELETE", timeout });
 }
 
-async function request(endpoint, { method, timeout = defaultTimeout } = {}) {
+async function postJson(endpoint, body, { timeout = defaultTimeout } = {}) {
+  return request(endpoint, { body, method: "POST", timeout });
+}
+
+async function request(
+  endpoint,
+  { body, method, timeout = defaultTimeout } = {}
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
+  const headers = {
+    Accept: "application/json",
+    Origin: api.origin,
+  };
+
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
 
   try {
     const response = await fetch(`${api.baseUrl}${endpoint}`, {
       method,
       signal: controller.signal,
-      headers: {
-        Accept: "application/json",
-        Origin: api.origin,
-      },
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
     });
     const text = await response.text();
     const data = parseJson(text);
@@ -123,6 +136,7 @@ const client = {
   createFormData,
   delete: del,
   get,
+  postJson,
   postMultipart,
 };
 

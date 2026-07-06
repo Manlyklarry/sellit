@@ -1,4 +1,9 @@
 import api from "../config/api";
+import { clearCurrentUser, saveCurrentUser } from "../auth/session";
+import {
+  registerForPushNotifications,
+  unregisterCurrentPushToken,
+} from "../notifications/pushNotifications";
 
 const authBaseUrl = `${api.baseUrl}/api/auth`;
 const requestTimeout = 10000;
@@ -39,26 +44,49 @@ async function authRequest(path, { body, method = "POST" } = {}) {
 }
 
 export function signUp({ email, name, password }) {
-  return authRequest("/sign-up/email", {
+  return authenticate("/sign-up/email", {
     body: {
       email,
       name,
       password,
     },
-  });
-}
-
-export function signIn({ email, password }) {
-  return authRequest("/sign-in/email", {
-    body: {
+    fallbackUser: {
       email,
-      password,
+      name,
     },
   });
 }
 
-export function signOut() {
-  return authRequest("/sign-out");
+export function signIn({ email, password }) {
+  return authenticate("/sign-in/email", {
+    body: {
+      email,
+      password,
+    },
+    fallbackUser: {
+      email,
+    },
+  });
+}
+
+export async function signOut() {
+  const result = await authRequest("/sign-out");
+  await unregisterCurrentPushToken();
+  await clearCurrentUser();
+  return result;
+}
+
+async function authenticate(path, { fallbackUser, ...options }) {
+  const data = await authRequest(path, options);
+  const user = await saveCurrentUser(getUserFromResponse(data) || fallbackUser);
+
+  registerForPushNotifications(user);
+
+  return data;
+}
+
+function getUserFromResponse(data) {
+  return data?.user || data?.data?.user || null;
 }
 
 function parseResponse(text) {

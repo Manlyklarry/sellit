@@ -9,6 +9,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { checkDatabaseConnection } from "./db.js";
 import listingsRouter from "./routes/listings.js";
+import pushTokensRouter from "./routes/pushTokens.js";
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -55,6 +56,7 @@ app.get("/health", async (_req, res, next) => {
 });
 
 app.use("/api/listings", listingsRouter);
+app.use("/api/push-tokens", pushTokensRouter);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

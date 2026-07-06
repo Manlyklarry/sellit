@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
 
 import { addListing } from "../api/listings";
+import { getCurrentUser } from "../auth/session";
 import {
   AppForm,
   AppFormField,
@@ -116,6 +117,7 @@ function ListingEditScreen() {
   );
 
   const handleSubmit = async (values, { resetForm }) => {
+    const currentUser = await getCurrentUser();
     const locationSnapshot = location ? null : await getLocation();
     const currentLocation = location || locationSnapshot?.location;
     const currentAddress = locationSnapshot?.address || address;
@@ -128,6 +130,7 @@ function ListingEditScreen() {
             longitude: currentLocation.coords.longitude,
           }
         : null,
+      seller: currentUser,
     };
 
     try {

@@ -9,6 +9,7 @@
   0.81, React 19.1.0, and Node 20.19.x minimum.
 - Entry point: `index.js`; root component: `App.js`
 - Form stack: `formik` for form state and `yup` for validation.
+- Push notifications use `expo-notifications`.
 - `lodash` is a direct dependency because Formik imports lodash submodules that
   Metro needs to resolve reliably.
 
@@ -95,6 +96,16 @@
 - Listing details can delete backend-backed listings. The mobile app calls
   `DELETE /api/listings/:id`, prunes the deleted item from the cached feed, and
   returns to `ListingsScreen` with the item removed from local state.
+- Push notifications use `expo-notifications`. On login/register the app stores
+  the current user locally, requests notification permission, gets an Expo push
+  token, and registers it with `POST /api/push-tokens`. On logout the last
+  registered token is removed from the backend. Expo SDK 54 remote push
+  notifications require a development or release build for full device testing;
+  Expo Go is not enough for Android remote push behavior.
+- New listing submissions include seller metadata. The backend stores nullable
+  seller fields on listings, notifies other registered push tokens when a new
+  item is listed, and supports `POST /api/listings/:id/inquiries` so buyers can
+  ask about an item and notify the seller.
 
 ## Assets and Sample Data
 

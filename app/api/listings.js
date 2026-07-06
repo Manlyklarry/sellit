@@ -108,6 +108,7 @@ export function addListing(listing, onUploadProgress) {
     category: listing.category,
     description: listing.description,
     location: listing.location,
+    seller: listing.seller,
   });
 
   listing.images.forEach((uri, index) => {

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 
+import { sendListingInquiry } from "../api/notifications";
 import { deleteListing } from "../api/listings";
+import { getCurrentUser } from "../auth/session";
 import AppButton from "../components/AppButton";
 import ListItem from "../components/ListItem";
 import colors from "../config/colors";
@@ -17,6 +19,7 @@ const defaultListing = {
 function ListingDetailsScreen({ navigation, route }) {
   const listing = route.params?.listing || defaultListing;
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSendingInquiry, setIsSendingInquiry] = useState(false);
   const canDelete = typeof listing.id === "string";
 
   const handleDelete = () => {
@@ -52,6 +55,48 @@ function ListingDetailsScreen({ navigation, route }) {
     }
   };
 
+  const handleInquiry = () => {
+    Alert.alert(
+      "Ask about item",
+      "Send the seller a notification asking if this item is still available?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Send",
+          onPress: sendInquiry,
+        },
+      ]
+    );
+  };
+
+  const sendInquiry = async () => {
+    setIsSendingInquiry(true);
+
+    try {
+      const currentUser = await getCurrentUser();
+
+      if (isCurrentUsersListing(currentUser, listing)) {
+        Alert.alert("This is your listing", "Buyers can ask you about this item.");
+        return;
+      }
+
+      await sendListingInquiry({
+        listingId: listing.id,
+        message: `Hi, is "${listing.title}" still available?`,
+        user: currentUser,
+      });
+
+      Alert.alert("Sent", "The seller has been notified.");
+    } catch (error) {
+      Alert.alert("Could not send message", error.message);
+    } finally {
+      setIsSendingInquiry(false);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <Image source={listing.image} style={styles.image} />
@@ -65,13 +110,24 @@ function ListingDetailsScreen({ navigation, route }) {
 
       <View style={styles.userContainer}>
         <ListItem
-          title="MANLYKLARRY"
+          title={listing.sellerName || "MANLYKLARRY"}
           subTitle="5 Listings"
           image={require("../assets/profiles/larry.jpeg")}
           showChevron
           onPress={() => console.log("seller")}
         />
       </View>
+
+      {canDelete ? (
+        <View style={styles.actionContainer}>
+          <AppButton
+            color="secondary"
+            disabled={isSendingInquiry}
+            onPress={handleInquiry}
+            title={isSendingInquiry ? "Sending..." : "Ask about item"}
+          />
+        </View>
+      ) : null}
 
       {canDelete ? (
         <View style={styles.deleteContainer}>
@@ -84,6 +140,15 @@ function ListingDetailsScreen({ navigation, route }) {
         </View>
       ) : null}
     </View>
+  );
+}
+
+function isCurrentUsersListing(user, listing) {
+  if (!user) return false;
+
+  return Boolean(
+    (listing.sellerUserId && listing.sellerUserId === user.id) ||
+      (listing.sellerEmail && listing.sellerEmail === user.email)
   );
 }
 
@@ -112,9 +177,12 @@ const styles = StyleSheet.create({
   userContainer: {
     marginHorizontal: 20,
   },
-  deleteContainer: {
+  actionContainer: {
     marginHorizontal: 20,
     marginTop: 20,
+  },
+  deleteContainer: {
+    marginHorizontal: 20,
   },
 });
 
