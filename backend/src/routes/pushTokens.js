@@ -13,23 +13,13 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ error: "A valid Expo push token is required." });
     }
 
+    const pushTokenData = getPushTokenData({ platform, token, user });
     const pushToken = await prisma.pushToken.upsert({
       where: {
         token,
       },
-      update: {
-        platform,
-        userEmail: user?.email || null,
-        userId: user?.id || null,
-        userName: user?.name || null,
-      },
-      create: {
-        platform,
-        token,
-        userEmail: user?.email || null,
-        userId: user?.id || null,
-        userName: user?.name || null,
-      },
+      update: pushTokenData,
+      create: pushTokenData,
     });
 
     res.status(201).json({ pushToken });
@@ -51,5 +41,15 @@ router.delete("/:token", async (req, res, next) => {
     next(error);
   }
 });
+
+function getPushTokenData({ platform, token, user }) {
+  return {
+    platform,
+    token,
+    userEmail: user?.email || null,
+    userId: user?.id || null,
+    userName: user?.name || null,
+  };
+}
 
 export default router;

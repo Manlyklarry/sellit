@@ -4,7 +4,10 @@ import path from "node:path";
 import express from "express";
 import multer from "multer";
 
-import { sendPushNotifications } from "../notifications.js";
+import {
+  notifySellerAboutInquiry,
+  notifyUsersAboutNewListing,
+} from "../listingNotifications.js";
 import { prisma } from "../prisma.js";
 
 const router = express.Router();
@@ -215,66 +218,6 @@ function formatListing(listing) {
     images,
     imageUrl: images[0]?.url || null,
   };
-}
-
-async function notifyUsersAboutNewListing(listing) {
-  try {
-    const excludedSellers = [
-      listing.sellerUserId ? { userId: listing.sellerUserId } : null,
-      listing.sellerEmail ? { userEmail: listing.sellerEmail } : null,
-    ].filter(Boolean);
-    const tokens = await prisma.pushToken.findMany({
-      where: excludedSellers.length ? { NOT: excludedSellers } : undefined,
-    });
-
-    await sendPushNotifications(
-      tokens.map((token) => ({
-        to: token.token,
-        sound: "default",
-        title: "New item listed",
-        body: `${listing.sellerName || "Someone"} listed ${listing.title}.`,
-        data: {
-          listingId: listing.id,
-          type: "new-listing",
-        },
-      }))
-    );
-  } catch (error) {
-    console.error("Failed to send new listing notifications", error);
-  }
-}
-
-async function notifySellerAboutInquiry({ buyer, inquiry, listing }) {
-  try {
-    if (!listing.sellerUserId && !listing.sellerEmail) return;
-
-    const tokens = await prisma.pushToken.findMany({
-      where: {
-        OR: [
-          listing.sellerUserId ? { userId: listing.sellerUserId } : undefined,
-          listing.sellerEmail ? { userEmail: listing.sellerEmail } : undefined,
-        ].filter(Boolean),
-      },
-    });
-
-    await sendPushNotifications(
-      tokens.map((token) => ({
-        to: token.token,
-        sound: "default",
-        title: "Buyer inquiry",
-        body: `${buyer?.name || buyer?.email || "Someone"} asked about ${
-          listing.title
-        }.`,
-        data: {
-          inquiryId: inquiry.id,
-          listingId: listing.id,
-          type: "listing-inquiry",
-        },
-      }))
-    );
-  } catch (error) {
-    console.error("Failed to send inquiry notification", error);
-  }
 }
 
 router.use((error, _req, res, next) => {

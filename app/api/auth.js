@@ -70,10 +70,12 @@ export function signIn({ email, password }) {
 }
 
 export async function signOut() {
-  const result = await authRequest("/sign-out");
-  await unregisterCurrentPushToken();
-  await clearCurrentUser();
-  return result;
+  try {
+    return await authRequest("/sign-out");
+  } finally {
+    await unregisterCurrentPushToken();
+    await clearCurrentUser();
+  }
 }
 
 async function authenticate(path, { fallbackUser, ...options }) {

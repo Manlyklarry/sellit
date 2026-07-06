@@ -6,6 +6,8 @@ import { Platform } from "react-native";
 import { registerPushToken, unregisterPushToken } from "../api/notifications";
 
 const registeredPushTokenKey = "sellit-expo-push-token";
+const listingsChannelId = "listings";
+const listingsChannelName = "Listings";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,8 +23,8 @@ export async function registerForPushNotifications(user) {
 
   try {
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("listings", {
-        name: "Listings",
+      await Notifications.setNotificationChannelAsync(listingsChannelId, {
+        name: listingsChannelName,
         importance: Notifications.AndroidImportance.DEFAULT,
         sound: "default",
       });
