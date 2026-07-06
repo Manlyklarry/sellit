@@ -9,7 +9,7 @@ import colors from "../config/colors";
 import { FEED_ROUTES } from "../navigation/routes";
 import formatCurrency from "../utils/currency";
 
-const listings = [
+const sampleListings = [
   {
     id: 1,
     title: "Chair and laundry basket",
@@ -43,7 +43,7 @@ const listings = [
 ];
 
 function ListingsScreen({ navigation, route }) {
-  const [feedListings, setFeedListings] = useState(listings);
+  const [feedListings, setFeedListings] = useState(sampleListings);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,16 +78,20 @@ function ListingsScreen({ navigation, route }) {
     loadListings();
   }, [loadListings]);
 
+  const removeListingFromFeed = useCallback((deletedListingId) => {
+    setFeedListings((currentListings) =>
+      currentListings.filter((listing) => listing.id !== deletedListingId)
+    );
+  }, []);
+
   useEffect(() => {
     const deletedListingId = route.params?.deletedListingId;
     if (!deletedListingId) return;
 
-    setFeedListings((currentListings) =>
-      currentListings.filter((listing) => listing.id !== deletedListingId)
-    );
+    removeListingFromFeed(deletedListingId);
     removeCachedListing(deletedListingId);
     navigation.setParams({ deletedListingId: undefined });
-  }, [navigation, route.params?.deletedListingId]);
+  }, [navigation, removeListingFromFeed, route.params?.deletedListingId]);
 
   const handleRefresh = () => {
     loadListings({ refreshingFeed: true });
@@ -131,7 +135,7 @@ function ListingsScreen({ navigation, route }) {
           />
         }
         renderItem={({ item }) => {
-          const image = item.image || listings[0].image;
+          const image = item.image || sampleListings[0].image;
 
           return (
             <View style={styles.cardContainer}>

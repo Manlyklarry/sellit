@@ -207,8 +207,14 @@ function isValidCategory(category) {
 
 async function deleteUploadedFiles(files = []) {
   await Promise.allSettled(
-    files.map((file) => fs.promises.unlink(path.resolve(process.cwd(), file.path)))
+    files.map((file) => fs.promises.unlink(getUploadedFilePath(file)))
   );
+}
+
+function getUploadedFilePath(file) {
+  return path.isAbsolute(file.path)
+    ? file.path
+    : path.resolve(process.cwd(), file.path);
 }
 
 export default router;

@@ -41,7 +41,7 @@ function normalizeListing(listing) {
 }
 
 export async function getListings() {
-  const cachedListings = await cache.get(listingsCacheKey);
+  const cachedListings = await getCachedListings();
   const networkState = await NetInfo.fetch();
 
   if (isOffline(networkState) && cachedListings) {
@@ -55,7 +55,7 @@ export async function getListings() {
     const data = await client.get("/api/listings");
     const listings = (data?.listings || []).map(normalizeListing);
 
-    await cache.store(listingsCacheKey, listings);
+    await cacheListings(listings);
 
     return {
       data: listings,
@@ -80,13 +80,18 @@ export async function deleteListing(id) {
 }
 
 export async function removeCachedListing(id) {
-  const cachedListings = await cache.get(listingsCacheKey);
+  const cachedListings = await getCachedListings();
   if (!cachedListings) return;
 
-  await cache.store(
-    listingsCacheKey,
-    cachedListings.filter((listing) => listing.id !== id)
-  );
+  await cacheListings(cachedListings.filter((listing) => listing.id !== id));
+}
+
+async function getCachedListings() {
+  return cache.get(listingsCacheKey);
+}
+
+async function cacheListings(listings) {
+  await cache.store(listingsCacheKey, listings);
 }
 
 function isOffline(networkState) {
