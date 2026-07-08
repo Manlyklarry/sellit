@@ -1,9 +1,14 @@
 import { Image, ImageBackground, StyleSheet, Text, View } from "react-native";
 
 import AppButton from "../components/AppButton";
+import ThemeToggle from "../components/ThemeToggle";
+import { useAppTheme } from "../config/theme";
 import { AUTH_ROUTES } from "../navigation/routes";
 
 function WelcomeScreen({ navigation }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <ImageBackground
       source={require("../assets/background.jpg")}
@@ -11,6 +16,9 @@ function WelcomeScreen({ navigation }) {
       resizeMode="cover"
     >
       <View style={styles.overlay} />
+      <View style={styles.themeToggle}>
+        <ThemeToggle compact />
+      </View>
 
       <View style={styles.logoContainer}>
         <Image source={require("../assets/logo-red.png")} style={styles.logo} />
@@ -32,7 +40,8 @@ function WelcomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   background: {
     flex: 1,
     justifyContent: "flex-end",
@@ -40,7 +49,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.15)",
+    backgroundColor: theme.overlay,
   },
   logo: {
     width: 110,
@@ -64,6 +73,11 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 20,
     paddingBottom: 36,
+  },
+  themeToggle: {
+    position: "absolute",
+    right: 20,
+    top: 58,
   },
 });
 

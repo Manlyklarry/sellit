@@ -2,11 +2,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
+  const { theme } = useAppTheme();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = otherProps.secureTextEntry;
+  const styles = createStyles(theme);
 
   return (
     <View
@@ -20,13 +22,13 @@ function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
       {icon ? (
         <MaterialCommunityIcons
           name={icon}
-          color={colors.medium}
+          color={theme.muted}
           size={22}
           style={styles.icon}
         />
       ) : null}
       <TextInput
-        placeholderTextColor={colors.medium}
+        placeholderTextColor={theme.muted}
         style={[
           styles.textInput,
           otherProps.multiline && styles.multilineTextInput,
@@ -44,7 +46,7 @@ function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
         >
           <MaterialCommunityIcons
             name={passwordVisible ? "eye-off" : "eye"}
-            color={colors.medium}
+            color={theme.muted}
             size={22}
           />
         </Pressable>
@@ -53,16 +55,17 @@ function AppTextInput({ icon, style, width = "100%", ...otherProps }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   container: {
     minHeight: 56,
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: theme.input,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#eee8e8",
+    borderColor: theme.border,
   },
   icon: {
     marginRight: 10,
@@ -81,7 +84,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 16,
     minWidth: 0,
   },

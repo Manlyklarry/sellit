@@ -1,23 +1,27 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet } from "react-native";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function ListItemDeleteAction({ onPress }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={onPress}
     >
-      <MaterialCommunityIcons name="trash-can" color={colors.white} size={32} />
+      <MaterialCommunityIcons name="trash-can" color="#ffffff" size={32} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   container: {
     width: 80,
-    backgroundColor: colors.danger,
+    backgroundColor: theme.danger,
     justifyContent: "center",
     alignItems: "center",
   },

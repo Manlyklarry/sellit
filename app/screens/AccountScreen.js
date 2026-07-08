@@ -8,7 +8,8 @@ import Icon from "../components/Icon";
 import ListItem from "../components/ListItem";
 import ListItemDeleteAction from "../components/ListItemDeleteAction";
 import ListItemSeparator from "../components/ListItemSeparator";
-import colors from "../config/colors";
+import ThemeToggle from "../components/ThemeToggle";
+import { useAppTheme } from "../config/theme";
 import { ROOT_ROUTES, TAB_ROUTES } from "../navigation/routes";
 
 const menuItems = [
@@ -17,7 +18,7 @@ const menuItems = [
     title: "My Listings",
     icon: {
       name: "format-list-bulleted",
-      backgroundColor: colors.primary,
+      colorKey: "primary",
     },
   },
   {
@@ -25,9 +26,15 @@ const menuItems = [
     title: "My Messages",
     icon: {
       name: "email",
-      backgroundColor: colors.secondary,
+      colorKey: "secondary",
     },
   },
+];
+
+const accountStats = [
+  { label: "Active", value: "5" },
+  { label: "Unread", value: "2" },
+  { label: "Rating", value: "4.9" },
 ];
 
 const initialMessages = [
@@ -56,6 +63,8 @@ const initialMessages = [
 ];
 
 function AccountScreen({ navigation }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
   const [messages, setMessages] = useState(initialMessages);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -84,6 +93,29 @@ function AccountScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.eyebrow}>Profile</Text>
+          <Text style={styles.heading}>Your account</Text>
+        </View>
+        <ThemeToggle />
+      </View>
+
+      <View style={styles.summaryPanel}>
+        <View>
+          <Text style={styles.summaryTitle}>MANLYKLARRY</Text>
+          <Text style={styles.summaryText}>Local seller dashboard</Text>
+        </View>
+        <View style={styles.statsGrid}>
+          {accountStats.map((stat) => (
+            <View key={stat.label} style={styles.statCard}>
+              <Text style={styles.statValue}>{stat.value}</Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
       <View style={styles.profileContainer}>
         <ListItem
           title="MANLYKLARRY"
@@ -106,7 +138,7 @@ function AccountScreen({ navigation }) {
               IconComponent={
                 <Icon
                   name={item.icon.name}
-                  backgroundColor={item.icon.backgroundColor}
+                  backgroundColor={theme[item.icon.colorKey]}
                 />
               }
               onPress={() => {
@@ -126,9 +158,7 @@ function AccountScreen({ navigation }) {
         <ListItem
           title="Logout"
           showChevron
-          IconComponent={
-            <Icon name="logout" backgroundColor={colors.danger} />
-          }
+          IconComponent={<Icon name="logout" backgroundColor={theme.danger} />}
           onPress={handleLogout}
         />
       </View>
@@ -188,31 +218,48 @@ function AccountScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.light,
+    backgroundColor: theme.background,
   },
   profileContainer: {
-    marginVertical: 20,
+    borderColor: theme.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginBottom: 14,
+    marginTop: 14,
+    overflow: "hidden",
   },
   menuContainer: {
+    borderColor: theme.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginHorizontal: 20,
     marginBottom: 20,
+    overflow: "hidden",
   },
   logoutContainer: {
+    borderColor: theme.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginHorizontal: 20,
     marginBottom: 20,
+    overflow: "hidden",
   },
   emptyContainer: {
     alignItems: "center",
     padding: 28,
   },
   emptyText: {
-    color: colors.medium,
+    color: theme.muted,
     marginTop: 4,
     textAlign: "center",
   },
   emptyTitle: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -224,13 +271,82 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   messagesMeta: {
-    color: colors.medium,
+    color: theme.muted,
     marginTop: 2,
   },
   messagesTitle: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 22,
     fontWeight: "700",
+  },
+  eyebrow: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  heading: {
+    color: theme.foreground,
+    fontSize: 30,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+  statCard: {
+    backgroundColor: theme.input,
+    borderColor: theme.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+  },
+  statLabel: {
+    color: theme.muted,
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+  },
+  statValue: {
+    color: theme.foreground,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  summaryPanel: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 18,
+    padding: 16,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: theme.mode === "dark" ? 0.2 : 0.08,
+    shadowRadius: 20,
+    elevation: 3,
+  },
+  summaryText: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  summaryTitle: {
+    color: theme.foreground,
+    fontSize: 18,
+    fontWeight: "900",
   },
 });
 

@@ -48,6 +48,9 @@
 - Use Ghana cedis throughout the app for all prices and currency displays.
   Display the currency text as `Ghc` directly, without parentheses, and route
   shared price formatting through `app/utils/currency.js`.
+- Do not label user-facing items as test listings or with placeholder/test
+  wording. Use real item names for sample or seeded content, and normalize
+  accidental placeholder titles before display.
 - For new touchable controls, prefer `Pressable` unless a course lesson
   specifically requires older Touchable APIs.
 - Use chevrons on rows that imply navigation or opening detail screens.

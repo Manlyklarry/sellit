@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import FeedNavigator from "./FeedNavigator";
 import { TAB_ROUTES } from "./routes";
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 import { AccountScreen, ListingEditScreen } from "../screens";
 
 const Tab = createBottomTabNavigator();
@@ -25,9 +25,11 @@ const tabs = {
 };
 
 function TabBarButton({ accessibilityState, children, onPress, routeName }) {
+  const { theme } = useAppTheme();
   const focused = accessibilityState?.selected;
   const isSellTab = routeName === TAB_ROUTES.SELL;
   const tab = tabs[routeName];
+  const styles = createStyles(theme);
 
   return (
     <Pressable
@@ -44,7 +46,7 @@ function TabBarButton({ accessibilityState, children, onPress, routeName }) {
         <View style={[styles.sellButton, focused && styles.sellButtonFocused]}>
           <MaterialCommunityIcons
             name={tab.icon}
-            color={colors.white}
+            color="#ffffff"
             size={28}
           />
         </View>
@@ -61,12 +63,15 @@ function TabBarButton({ accessibilityState, children, onPress, routeName }) {
 }
 
 function AppNavigator() {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.medium,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.muted,
         tabBarButton: (props) => (
           <TabBarButton {...props} routeName={route.name} />
         ),
@@ -74,7 +79,7 @@ function AppNavigator() {
         tabBarItemStyle: styles.tabBarItem,
         tabBarLabel: () => null,
         tabBarStyle: {
-          backgroundColor: colors.white,
+          backgroundColor: theme.tab,
           borderTopWidth: 0,
           borderRadius: 28,
           bottom: 18,
@@ -85,7 +90,7 @@ function AppNavigator() {
           paddingTop: 10,
           position: "absolute",
           right: 18,
-          shadowColor: colors.black,
+          shadowColor: theme.shadow,
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.14,
           shadowRadius: 20,
@@ -93,7 +98,7 @@ function AppNavigator() {
         tabBarIcon: ({ color, focused, size }) => (
           <MaterialCommunityIcons
             name={tabs[route.name].icon}
-            color={focused ? colors.primary : color}
+            color={focused ? theme.primary : color}
             size={size}
           />
         ),
@@ -118,7 +123,8 @@ function AppNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   pressed: {
     opacity: 0.78,
   },
@@ -128,16 +134,16 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
+    backgroundColor: theme.primary,
+    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.28,
     shadowRadius: 14,
     elevation: 8,
   },
   sellButtonFocused: {
-    backgroundColor: colors.secondary,
-    shadowColor: colors.secondary,
+    backgroundColor: theme.secondary,
+    shadowColor: theme.secondary,
   },
   sellButtonSlot: {
     top: -22,
@@ -151,13 +157,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tabLabel: {
-    color: colors.medium,
+    color: theme.muted,
     fontSize: 11,
     fontWeight: "800",
     marginTop: 2,
   },
   tabLabelFocused: {
-    color: colors.primary,
+    color: theme.primary,
   },
   tabPill: {
     minWidth: 86,
@@ -167,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   tabPillFocused: {
-    backgroundColor: "#fff1f2",
+    backgroundColor: theme.primarySoft,
   },
 });
 

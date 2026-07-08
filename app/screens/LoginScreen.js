@@ -1,4 +1,4 @@
-import { Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useFormikContext } from "formik";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
@@ -8,7 +8,8 @@ import AppForm from "../components/forms/AppForm";
 import AppFormField from "../components/forms/AppFormField";
 import ErrorMessage from "../components/forms/ErrorMessage";
 import SubmitButton from "../components/forms/SubmitButton";
-import colors from "../config/colors";
+import ThemeToggle from "../components/ThemeToggle";
+import { useAppTheme } from "../config/theme";
 import { ROOT_ROUTES } from "../navigation/routes";
 
 const validationSchema = Yup.object().shape({
@@ -21,10 +22,17 @@ const validationSchema = Yup.object().shape({
 });
 
 function LoginScreen({ navigation }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={styles.screen} edges={["bottom"]}>
+      <View style={styles.themeRow}>
+        <ThemeToggle compact />
+      </View>
       <View style={styles.container}>
         <Image source={require("../assets/logo-red.png")} style={styles.logo} />
+        <Text style={styles.heading}>Welcome back</Text>
 
         <AppForm
           initialValues={{ email: "", password: "" }}
@@ -71,20 +79,33 @@ function FormStatusError() {
   return <ErrorMessage error={status} visible={Boolean(status)} />;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   container: {
     padding: 20,
+  },
+  heading: {
+    color: theme.foreground,
+    fontSize: 30,
+    fontWeight: "900",
+    marginBottom: 24,
+    textAlign: "center",
   },
   logo: {
     width: 90,
     height: 90,
     alignSelf: "center",
     marginTop: 36,
-    marginBottom: 40,
+    marginBottom: 18,
   },
   screen: {
     flex: 1,
-    backgroundColor: colors.light,
+    backgroundColor: theme.background,
+  },
+  themeRow: {
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
 });
 

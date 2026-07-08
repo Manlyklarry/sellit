@@ -1,9 +1,12 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function PickerItem({ isSelected, item, onPress }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -16,12 +19,12 @@ function PickerItem({ isSelected, item, onPress }) {
       <View
         style={[
           styles.iconContainer,
-          { backgroundColor: item.backgroundColor || colors.light },
+          { backgroundColor: item.backgroundColor || theme.mutedSurface },
         ]}
       >
         <MaterialCommunityIcons
           name={item.icon || "tag-outline"}
-          color={item.iconColor || colors.white}
+          color={item.iconColor || "#ffffff"}
           size={22}
         />
       </View>
@@ -44,13 +47,13 @@ function PickerItem({ isSelected, item, onPress }) {
       {isSelected ? (
         <MaterialCommunityIcons
           name="check-circle"
-          color={colors.primary}
+          color={theme.primary}
           size={24}
         />
       ) : (
         <MaterialCommunityIcons
           name="chevron-right"
-          color={colors.medium}
+          color={theme.muted}
           size={22}
         />
       )}
@@ -58,7 +61,8 @@ function PickerItem({ isSelected, item, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
@@ -68,7 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   description: {
-    color: colors.medium,
+    color: theme.muted,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
@@ -82,7 +86,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   label: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -90,7 +94,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   selectedContainer: {
-    backgroundColor: "#fff2f3",
+    backgroundColor: theme.primarySoft,
   },
   textContainer: {
     flex: 1,

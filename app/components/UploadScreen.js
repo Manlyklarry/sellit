@@ -4,9 +4,11 @@ import { useEffect, useRef } from "react";
 import { Animated, Modal, StyleSheet, Text, View } from "react-native";
 
 import ProgressBar from "./ProgressBar";
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function UploadScreen({ done = false, progress = 0, visible = false }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
   const successScale = useRef(new Animated.Value(0.65)).current;
   const successOpacity = useRef(new Animated.Value(0)).current;
 
@@ -48,7 +50,7 @@ function UploadScreen({ done = false, progress = 0, visible = false }) {
             >
               <MaterialCommunityIcons
                 name="check-bold"
-                color={colors.white}
+                color="#ffffff"
                 size={62}
               />
             </Animated.View>
@@ -78,7 +80,8 @@ function UploadScreen({ done = false, progress = 0, visible = false }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   animation: {
     width: 150,
     height: 150,
@@ -88,24 +91,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: theme.overlay,
   },
   panel: {
     width: "100%",
     maxWidth: 340,
     alignItems: "center",
     borderRadius: 18,
-    backgroundColor: colors.white,
+    backgroundColor: theme.card,
     padding: 24,
   },
   percent: {
-    color: colors.medium,
+    color: theme.muted,
     fontSize: 13,
     fontWeight: "800",
     marginTop: 10,
   },
   subtitle: {
-    color: colors.medium,
+    color: theme.muted,
     lineHeight: 20,
     marginBottom: 18,
     textAlign: "center",
@@ -116,16 +119,16 @@ const styles = StyleSheet.create({
     borderRadius: 64,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.secondary,
+    backgroundColor: theme.secondary,
     marginBottom: 22,
-    shadowColor: colors.secondary,
+    shadowColor: theme.secondary,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.28,
     shadowRadius: 18,
     elevation: 8,
   },
   title: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 22,
     fontWeight: "800",
     marginTop: -12,

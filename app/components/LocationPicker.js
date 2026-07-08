@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
 import AppActivityIndicator from "./AppActivityIndicator";
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function LocationPicker({
   address,
@@ -13,6 +13,8 @@ function LocationPicker({
   onRefresh,
   refreshing,
 }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
   const coords = location?.coords;
   const region = coords
     ? {
@@ -29,7 +31,7 @@ function LocationPicker({
         <View style={styles.titleContainer}>
           <MaterialCommunityIcons
             name="map-marker"
-            color={colors.primary}
+            color={theme.primary}
             size={22}
           />
           <Text style={styles.title}>Location</Text>
@@ -53,7 +55,7 @@ function LocationPicker({
           ) : (
             <MaterialCommunityIcons
               name="crosshairs-gps"
-              color={colors.primary}
+              color={theme.primary}
               size={20}
             />
           )}
@@ -81,7 +83,7 @@ function LocationPicker({
           ) : (
             <MaterialCommunityIcons
               name="map-marker-off"
-              color={colors.medium}
+              color={theme.muted}
               size={34}
             />
           )}
@@ -101,24 +103,25 @@ function LocationPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   address: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 15,
     fontWeight: "600",
     marginTop: 10,
   },
   container: {
-    backgroundColor: colors.white,
+    backgroundColor: theme.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#eee8e8",
+    borderColor: theme.border,
     padding: 14,
     marginTop: 4,
     marginBottom: 4,
   },
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 13,
     marginTop: 6,
   },
@@ -136,7 +139,7 @@ const styles = StyleSheet.create({
   mapPlaceholder: {
     height: 150,
     borderRadius: 12,
-    backgroundColor: colors.light,
+    backgroundColor: theme.mutedSurface,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -157,13 +160,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   refreshText: {
-    color: colors.primary,
+    color: theme.primary,
     fontSize: 14,
     fontWeight: "700",
     marginLeft: 4,
   },
   title: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 16,
     fontWeight: "700",
     marginLeft: 6,

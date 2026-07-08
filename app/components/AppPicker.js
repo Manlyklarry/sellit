@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 import PickerItem from "./PickerItem";
 
 function AppPicker({
@@ -20,7 +20,9 @@ function AppPicker({
   selectedItem,
   title = "Choose an option",
 }) {
+  const { theme } = useAppTheme();
   const [modalVisible, setModalVisible] = useState(false);
+  const styles = createStyles(theme);
 
   const handleSelect = (item) => {
     onSelectItem(item);
@@ -44,7 +46,7 @@ function AppPicker({
         </Text>
         <MaterialCommunityIcons
           name="chevron-down"
-          color={colors.medium}
+          color={theme.muted}
           size={24}
         />
       </Pressable>
@@ -72,7 +74,7 @@ function AppPicker({
             >
               <MaterialCommunityIcons
                 name="close"
-                color={colors.medium}
+                color={theme.muted}
                 size={22}
               />
             </Pressable>
@@ -97,16 +99,17 @@ function AppPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    backgroundColor: theme.overlay,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.light,
+    backgroundColor: theme.mutedSurface,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -114,7 +117,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#ded8d8",
+    backgroundColor: theme.border,
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 6,
@@ -133,22 +136,22 @@ const styles = StyleSheet.create({
   picker: {
     height: 56,
     borderRadius: 14,
-    backgroundColor: colors.white,
+    backgroundColor: theme.input,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#eee8e8",
+    borderColor: theme.border,
   },
   placeholderText: {
-    color: colors.medium,
+    color: theme.muted,
   },
   pressed: {
     opacity: 0.75,
   },
   selectedText: {
     flex: 1,
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 16,
     fontWeight: "600",
   },
@@ -157,13 +160,13 @@ const styles = StyleSheet.create({
   },
   sheet: {
     maxHeight: "78%",
-    backgroundColor: colors.white,
+    backgroundColor: theme.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: "hidden",
   },
   title: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 20,
     fontWeight: "700",
   },

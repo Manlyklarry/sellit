@@ -3,14 +3,17 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import AppNavigator from "./AppNavigator";
 import AuthNavigator from "./AuthNavigator";
-import navigationTheme from "./navigationTheme";
+import createNavigationTheme from "./navigationTheme";
 import { ROOT_ROUTES } from "./routes";
+import { useAppTheme } from "../config/theme";
 
 const Stack = createNativeStackNavigator();
 
 function RootNavigator() {
+  const { theme } = useAppTheme();
+
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={createNavigationTheme(theme)}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name={ROOT_ROUTES.AUTH} component={AuthNavigator} />
         <Stack.Screen name={ROOT_ROUTES.APP} component={AppNavigator} />

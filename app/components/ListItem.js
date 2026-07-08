@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function ListItem({
   IconComponent,
@@ -17,6 +17,9 @@ function ListItem({
   title,
   titleNumberOfLines = 1,
 }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   const content = (
     <Pressable
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
@@ -58,7 +61,7 @@ function ListItem({
       {showChevron ? (
         <MaterialCommunityIcons
           name="chevron-right"
-          color={colors.medium}
+          color={theme.muted}
           size={25}
         />
       ) : null}
@@ -74,11 +77,12 @@ function ListItem({
   return content;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.white,
+    backgroundColor: theme.card,
     padding: 15,
     minHeight: 78,
   },
@@ -86,7 +90,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
     marginLeft: 8,
   },
   detailsContainer: {
@@ -106,12 +110,12 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: colors.secondary,
+    backgroundColor: theme.secondary,
     justifyContent: "center",
     alignItems: "center",
   },
   placeholderText: {
-    color: colors.white,
+    color: "#ffffff",
     fontSize: 28,
     fontWeight: "bold",
   },
@@ -119,17 +123,18 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
   rightText: {
-    color: colors.medium,
+    color: theme.muted,
     fontSize: 12,
     marginLeft: 8,
     maxWidth: 54,
   },
   subTitle: {
-    color: colors.medium,
+    color: theme.muted,
     lineHeight: 19,
     marginTop: 3,
   },
   title: {
+    color: theme.foreground,
     fontSize: 16,
     fontWeight: "500",
   },

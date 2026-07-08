@@ -1,20 +1,23 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { FEED_ROUTES } from "./routes";
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 import { ListingDetailsScreen, ListingsScreen } from "../screens";
 
 const Stack = createNativeStackNavigator();
 
 function FeedNavigator() {
+  const { theme } = useAppTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
         animation: "slide_from_right",
         headerBackTitle: "Back",
         headerShadowVisible: false,
+        headerTintColor: theme.foreground,
         headerStyle: {
-          backgroundColor: colors.light,
+          backgroundColor: theme.background,
         },
         headerTitleStyle: {
           fontWeight: "800",
@@ -32,7 +35,7 @@ function FeedNavigator() {
         options={({ route }) => ({
           title: route.params?.listing?.title || "Listing",
           headerStyle: {
-            backgroundColor: colors.white,
+            backgroundColor: theme.card,
           },
         })}
       />

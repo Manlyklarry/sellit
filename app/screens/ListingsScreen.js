@@ -1,53 +1,50 @@
-import { useCallback, useEffect, useState } from "react";
-import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getListings, removeCachedListing } from "../api/listings";
 import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
-import colors from "../config/colors";
+import ThemeToggle from "../components/ThemeToggle";
+import { useAppTheme } from "../config/theme";
 import { FEED_ROUTES } from "../navigation/routes";
+import { filterListings, getListingCategory } from "../utils/listingFilters";
 import formatCurrency from "../utils/currency";
-
-const sampleListings = [
-  {
-    id: 1,
-    title: "Chair and laundry basket",
-    price: 100,
-    image: require("../assets/listings/chair-laundry-basket.png"),
-  },
-  {
-    id: 2,
-    title: "Charcoal stove",
-    price: 35,
-    image: require("../assets/listings/charcoal-stove.png"),
-  },
-  {
-    id: 3,
-    title: "Cocoa beans",
-    price: 80,
-    image: require("../assets/listings/cocoa-beans.png"),
-  },
-  {
-    id: 4,
-    title: "Kente cloth",
-    price: 120,
-    image: require("../assets/listings/kente-cloth.png"),
-  },
-  {
-    id: 5,
-    title: "Red bicycle",
-    price: 250,
-    image: require("../assets/listings/red-bicycle.png"),
-  },
-];
+import { listingCategories, sampleListings } from "./listingsData";
 
 function ListingsScreen({ navigation, route }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+  const headerOpacity = useRef(new Animated.Value(0)).current;
   const [feedListings, setFeedListings] = useState(sampleListings);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [usingCache, setUsingCache] = useState(false);
+
+  const filteredListings = useMemo(
+    () =>
+      filterListings(feedListings, {
+        query: searchQuery,
+        selectedCategory,
+      }),
+    [feedListings, searchQuery, selectedCategory]
+  );
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 || selectedCategory !== "All";
 
   const loadListings = useCallback(async ({ refreshingFeed = false } = {}) => {
     if (refreshingFeed) {
@@ -78,6 +75,14 @@ function ListingsScreen({ navigation, route }) {
     loadListings();
   }, [loadListings]);
 
+  useEffect(() => {
+    Animated.timing(headerOpacity, {
+      toValue: 1,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+  }, [headerOpacity]);
+
   const removeListingFromFeed = useCallback((deletedListingId) => {
     setFeedListings((currentListings) =>
       currentListings.filter((listing) => listing.id !== deletedListingId)
@@ -97,13 +102,18 @@ function ListingsScreen({ navigation, route }) {
     loadListings({ refreshingFeed: true });
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("All");
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       {isLoading ? (
         <AppActivityIndicator compact message="Loading listings..." />
       ) : null}
       <FlatList
-        data={feedListings}
+        data={filteredListings}
         keyExtractor={(listing) => listing.id.toString()}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
@@ -111,6 +121,136 @@ function ListingsScreen({ navigation, route }) {
             {refreshing ? (
               <AppActivityIndicator compact message="Refreshing listings..." />
             ) : null}
+            <Animated.View
+              style={[
+                styles.hero,
+                {
+                  opacity: headerOpacity,
+                  transform: [
+                    {
+                      translateY: headerOpacity.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [16, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <View style={styles.header}>
+                <View style={styles.headerText}>
+                  <Text style={styles.eyebrow}>Sellit marketplace</Text>
+                  <Text style={styles.heading}>Browse nearby finds</Text>
+                  <Text style={styles.heroCopy}>
+                    Search local listings and filter by category.
+                  </Text>
+                </View>
+                <ThemeToggle compact />
+              </View>
+              <View style={styles.searchBox}>
+                <MaterialCommunityIcons
+                  color={theme.muted}
+                  name="magnify"
+                  size={22}
+                />
+                <TextInput
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                  onChangeText={setSearchQuery}
+                  placeholder="Search chairs, bikes, food..."
+                  placeholderTextColor={theme.muted}
+                  returnKeyType="search"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                />
+                <Pressable
+                  accessibilityLabel={
+                    hasActiveFilters ? "Clear filters" : "Filters active"
+                  }
+                  accessibilityRole="button"
+                  onPress={hasActiveFilters ? clearFilters : undefined}
+                  style={styles.filterButton}
+                >
+                  <MaterialCommunityIcons
+                    color="#ffffff"
+                    name={hasActiveFilters ? "close" : "tune-variant"}
+                    size={18}
+                  />
+                </Pressable>
+              </View>
+              <View style={styles.statsRow}>
+                <View>
+                  <Text style={styles.statValue}>{feedListings.length}</Text>
+                  <Text style={styles.statLabel}>live listings</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View>
+                  <Text style={styles.statValue}>GHC</Text>
+                  <Text style={styles.statLabel}>local pricing</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View>
+                  <Text style={styles.statValue}>24h</Text>
+                  <Text style={styles.statLabel}>fresh drops</Text>
+                </View>
+              </View>
+            </Animated.View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Browse categories</Text>
+              <Text style={styles.sectionAction}>
+                {selectedCategory === "All" ? "Nearby" : selectedCategory}
+              </Text>
+            </View>
+            <View style={styles.categoryGrid}>
+              {listingCategories.map((category) => {
+                const selected = selectedCategory === category.label;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    key={category.label}
+                    onPress={() => setSelectedCategory(category.label)}
+                    style={[
+                      styles.categoryChip,
+                      selected && styles.categoryChipSelected,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.categoryIcon,
+                        {
+                          backgroundColor: selected
+                            ? theme[category.color]
+                            : theme[`${category.color}Soft`],
+                        },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        color={selected ? "#ffffff" : theme[category.color]}
+                        name={category.icon}
+                        size={20}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        selected && styles.categoryTextSelected,
+                      ]}
+                    >
+                      {category.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Latest listings</Text>
+              <Text style={styles.sectionAction}>
+                {filteredListings.length} shown
+              </Text>
+            </View>
             {usingCache ? (
               <View style={styles.notice}>
                 <Text style={styles.noticeText}>
@@ -124,6 +264,26 @@ function ListingsScreen({ navigation, route }) {
               </View>
             ) : null}
           </>
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                color={theme.muted}
+                name="magnify-close"
+                size={34}
+              />
+              <Text style={styles.emptyTitle}>No matching items</Text>
+              <Text style={styles.emptyText}>
+                Try another search term or choose a different category.
+              </Text>
+              {hasActiveFilters ? (
+                <Pressable onPress={clearFilters} style={styles.clearButton}>
+                  <Text style={styles.clearButtonText}>Clear filters</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null
         }
         refreshControl={
           <RefreshControl
@@ -143,6 +303,8 @@ function ListingsScreen({ navigation, route }) {
                 title={item.title}
                 subTitle={formatCurrency(item.price)}
                 image={image}
+                location={item.location?.address || "Accra"}
+                meta={getListingCategory(item)}
                 onPress={() =>
                   navigation.navigate(FEED_ROUTES.DETAILS, {
                     listing: { ...item, image },
@@ -157,37 +319,231 @@ function ListingsScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.light,
+    backgroundColor: theme.background,
   },
   list: {
-    padding: 20,
+    padding: 18,
     paddingBottom: 120,
   },
   cardContainer: {
     marginBottom: 20,
   },
   errorNotice: {
-    backgroundColor: colors.danger,
-    borderRadius: 8,
+    backgroundColor: theme.danger,
+    borderRadius: 12,
     marginBottom: 20,
     padding: 12,
   },
   errorText: {
-    color: colors.white,
+    color: "#ffffff",
     fontWeight: "600",
   },
   notice: {
-    backgroundColor: colors.white,
-    borderRadius: 8,
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 20,
     padding: 12,
   },
   noticeText: {
-    color: colors.medium,
+    color: theme.muted,
     fontWeight: "600",
+  },
+  eyebrow: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  headerText: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  heading: {
+    color: theme.foreground,
+    fontSize: 24,
+    fontWeight: "700",
+    lineHeight: 30,
+    marginTop: 4,
+  },
+  heroCopy: {
+    color: theme.muted,
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  categoryChip: {
+    alignItems: "center",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    height: 42,
+    justifyContent: "center",
+    paddingLeft: 8,
+    paddingRight: 12,
+  },
+  categoryChipSelected: {
+    borderColor: theme.primary,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: theme.mode === "dark" ? 0.24 : 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  categoryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 18,
+  },
+  categoryIcon: {
+    alignItems: "center",
+    borderRadius: 13,
+    height: 26,
+    justifyContent: "center",
+    marginRight: 7,
+    width: 26,
+  },
+  categoryText: {
+    color: theme.foreground,
+    fontSize: 13,
+    fontWeight: "900",
+    lineHeight: 16,
+  },
+  categoryTextSelected: {
+    color: theme.primary,
+  },
+  clearButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 999,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+  },
+  clearButtonText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  emptyState: {
+    alignItems: "center",
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: 4,
+    padding: 24,
+  },
+  emptyText: {
+    color: theme.muted,
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+    marginTop: 5,
+    textAlign: "center",
+  },
+  emptyTitle: {
+    color: theme.foreground,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 10,
+  },
+  filterButton: {
+    alignItems: "center",
+    backgroundColor: theme.primary,
+    borderRadius: 13,
+    height: 34,
+    justifyContent: "center",
+    marginLeft: "auto",
+    width: 34,
+  },
+  hero: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginBottom: 20,
+    padding: 16,
+    shadowColor: theme.shadow,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: theme.mode === "dark" ? 0.22 : 0.08,
+    shadowRadius: 22,
+    elevation: 3,
+  },
+  searchBox: {
+    alignItems: "center",
+    backgroundColor: theme.input,
+    borderColor: theme.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginTop: 18,
+    minHeight: 52,
+    paddingHorizontal: 14,
+  },
+  searchInput: {
+    color: theme.foreground,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "700",
+    marginLeft: 8,
+    minWidth: 0,
+    paddingVertical: 0,
+  },
+  sectionAction: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    color: theme.foreground,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  statDivider: {
+    backgroundColor: theme.border,
+    height: 32,
+    width: 1,
+  },
+  statLabel: {
+    color: theme.muted,
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  statsRow: {
+    alignItems: "center",
+    backgroundColor: theme.cardMuted,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  statValue: {
+    color: theme.foreground,
+    fontSize: 16,
+    fontWeight: "900",
   },
 });
 

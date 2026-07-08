@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { sendListingInquiry } from "../api/notifications";
 import { deleteListing } from "../api/listings";
 import { getCurrentUser } from "../auth/session";
 import AppButton from "../components/AppButton";
 import ListItem from "../components/ListItem";
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 import { FEED_ROUTES } from "../navigation/routes";
 import formatCurrency from "../utils/currency";
 
@@ -17,10 +18,26 @@ const defaultListing = {
 };
 
 function ListingDetailsScreen({ navigation, route }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
   const listing = route.params?.listing || defaultListing;
+  const [currentUser, setCurrentUser] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSendingInquiry, setIsSendingInquiry] = useState(false);
-  const canDelete = typeof listing.id === "string";
+  const isBackendListing = typeof listing.id === "string";
+  const isOwnListing = isCurrentUsersListing(currentUser, listing);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getCurrentUser().then((user) => {
+      if (mounted) setCurrentUser(user);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleDelete = () => {
     Alert.alert(
@@ -76,9 +93,7 @@ function ListingDetailsScreen({ navigation, route }) {
     setIsSendingInquiry(true);
 
     try {
-      const currentUser = await getCurrentUser();
-
-      if (isCurrentUsersListing(currentUser, listing)) {
+      if (isOwnListing) {
         Alert.alert("This is your listing", "Buyers can ask you about this item.");
         return;
       }
@@ -98,27 +113,69 @@ function ListingDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.screen}>
-      <Image source={listing.image} style={styles.image} />
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.imageWrap}>
+        <Image source={listing.image} style={styles.image} />
+        <View style={styles.imageOverlay} />
+        <View style={styles.pricePill}>
+          <Text style={styles.price}>{formatCurrency(listing.price)}</Text>
+        </View>
+      </View>
 
       <View style={styles.detailsContainer}>
+        <Text style={styles.eyebrow}>Available now</Text>
         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
           {listing.title}
         </Text>
-        <Text style={styles.price}>{formatCurrency(listing.price)}</Text>
+        <View style={styles.quickFacts}>
+          <View style={styles.fact}>
+            <MaterialCommunityIcons
+              color={theme.secondary}
+              name="map-marker-radius-outline"
+              size={18}
+            />
+            <Text style={styles.factText}>
+              {listing.location?.address || "Accra"}
+            </Text>
+          </View>
+          <View style={styles.fact}>
+            <MaterialCommunityIcons
+              color={theme.accent}
+              name="shield-check-outline"
+              size={18}
+            />
+            <Text style={styles.factText}>Verified seller</Text>
+          </View>
+        </View>
       </View>
 
+      <View style={styles.infoPanel}>
+        <Text style={styles.panelTitle}>Item notes</Text>
+        <Text style={styles.description}>
+          {listing.description ||
+            "A clean, ready-to-pick-up item from a local seller. Message before visiting to confirm availability and pickup details."}
+        </Text>
+      </View>
+
+      <View style={styles.sellerHeader}>
+        <Text style={styles.panelTitle}>Seller</Text>
+        <Text style={styles.sellerMeta}>Usually replies quickly</Text>
+      </View>
       <View style={styles.userContainer}>
         <ListItem
           title={listing.sellerName || "MANLYKLARRY"}
-          subTitle="5 Listings"
+          subTitle="5 active listings"
           image={require("../assets/profiles/larry.jpeg")}
           showChevron
           onPress={() => console.log("seller")}
         />
       </View>
 
-      {canDelete ? (
+      {isBackendListing && !isOwnListing ? (
         <View style={styles.actionContainer}>
           <AppButton
             color="secondary"
@@ -129,7 +186,7 @@ function ListingDetailsScreen({ navigation, route }) {
         </View>
       ) : null}
 
-      {canDelete ? (
+      {isBackendListing && isOwnListing ? (
         <View style={styles.deleteContainer}>
           <AppButton
             color="danger"
@@ -139,7 +196,7 @@ function ListingDetailsScreen({ navigation, route }) {
           />
         </View>
       ) : null}
-    </View>
+    </ScrollView>
   );
 }
 
@@ -152,30 +209,120 @@ function isCurrentUsersListing(user, listing) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   detailsContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  description: {
+    color: theme.muted,
+    fontSize: 15,
+    fontWeight: "600",
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  eyebrow: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: "900",
+    marginBottom: 6,
+    textTransform: "uppercase",
   },
   image: {
     width: "100%",
-    height: 300,
+    height: 330,
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor:
+      theme.mode === "dark" ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.04)",
+  },
+  imageWrap: {
+    backgroundColor: theme.mutedSurface,
+    overflow: "hidden",
+  },
+  infoPanel: {
+    backgroundColor: theme.cardMuted,
+    borderColor: theme.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginHorizontal: 20,
+    marginTop: 14,
+    padding: 16,
+  },
+  fact: {
+    alignItems: "center",
+    backgroundColor: theme.cardMuted,
+    borderColor: theme.border,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  factText: {
+    color: theme.foreground,
+    fontSize: 12,
+    fontWeight: "800",
+    marginLeft: 5,
+  },
+  panelTitle: {
+    color: theme.foreground,
+    fontSize: 18,
+    fontWeight: "900",
   },
   price: {
-    color: colors.secondary,
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 10,
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  pricePill: {
+    backgroundColor: theme.primary,
+    borderRadius: 999,
+    bottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    position: "absolute",
+    right: 16,
+  },
+  quickFacts: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  scrollContent: {
+    paddingBottom: 130,
   },
   screen: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: theme.background,
   },
   title: {
+    color: theme.foreground,
     fontSize: 24,
-    fontWeight: "500",
+    fontWeight: "900",
   },
   userContainer: {
+    borderColor: theme.border,
+    borderRadius: 16,
+    borderWidth: 1,
     marginHorizontal: 20,
+    overflow: "hidden",
+  },
+  sellerHeader: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 20,
+    marginBottom: 10,
+    marginTop: 22,
+  },
+  sellerMeta: {
+    color: theme.muted,
+    fontSize: 12,
+    fontWeight: "800",
   },
   actionContainer: {
     marginHorizontal: 20,

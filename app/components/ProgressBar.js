@@ -1,8 +1,11 @@
 import { StyleSheet, View } from "react-native";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function ProgressBar({ progress = 0 }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.track}>
       <View
@@ -15,17 +18,18 @@ function ProgressBar({ progress = 0 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   fill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.primary,
   },
   track: {
     width: "100%",
     height: 10,
     borderRadius: 999,
-    backgroundColor: "#f1dfe1",
+    backgroundColor: theme.primarySoft,
     overflow: "hidden",
   },
 });

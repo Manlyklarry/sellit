@@ -8,6 +8,11 @@ import {
   notifySellerAboutInquiry,
   notifyUsersAboutNewListing,
 } from "../listingNotifications.js";
+import {
+  formatListing,
+  normalizeListingDescription,
+  normalizeListingTitle,
+} from "../listingPresentation.js";
 import { prisma } from "../prisma.js";
 
 const router = express.Router();
@@ -74,8 +79,11 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
     const location = parseJsonField(req.body.location);
     const seller = parseJsonField(req.body.seller);
     const price = parsePrice(req.body.price);
+    const description = normalizeListingDescription(req.body.description);
+    const title = normalizeListingTitle(req.body.title);
+    const sellerSnapshot = await resolveSellerSnapshot(seller);
 
-    if (!req.body.title || !req.body.description || !isValidCategory(category)) {
+    if (!title || !description || !isValidCategory(category)) {
       await deleteUploadedFiles(req.files);
       return res.status(400).json({
         error: "Name of item, price, category, and description are required.",
@@ -97,15 +105,15 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
 
     const listing = await prisma.listing.create({
       data: {
-        title: req.body.title,
+        title,
         price,
         categoryId: category.value,
         categoryLabel: category.label,
-        description: req.body.description,
+        description,
         location,
-        sellerEmail: seller?.email || null,
-        sellerName: seller?.name || null,
-        sellerUserId: seller?.id || null,
+        sellerEmail: sellerSnapshot.email,
+        sellerName: sellerSnapshot.name,
+        sellerUserId: sellerSnapshot.userId,
         images: {
           create: req.files.map((file) => ({
             filename: file.filename,
@@ -120,9 +128,10 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
       },
     });
 
-    notifyUsersAboutNewListing(formatListing(listing));
+    const formattedListing = formatListing(listing);
+    notifyUsersAboutNewListing(formattedListing);
 
-    res.status(201).json({ listing });
+    res.status(201).json({ listing: formattedListing });
   } catch (error) {
     await deleteUploadedFiles(req.files);
     next(error);
@@ -193,33 +202,6 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-function formatListing(listing) {
-  const images = listing.images.map((image) => ({
-    id: image.id,
-    filename: image.filename,
-    mimetype: image.mimetype,
-    size: image.size,
-    url: `/uploads/listings/${image.filename}`,
-  }));
-
-  return {
-    id: listing.id,
-    title: listing.title,
-    price: listing.price.toString(),
-    categoryId: listing.categoryId,
-    categoryLabel: listing.categoryLabel,
-    description: listing.description,
-    location: listing.location,
-    sellerEmail: listing.sellerEmail,
-    sellerName: listing.sellerName,
-    sellerUserId: listing.sellerUserId,
-    createdAt: listing.createdAt,
-    updatedAt: listing.updatedAt,
-    images,
-    imageUrl: images[0]?.url || null,
-  };
-}
-
 router.use((error, _req, res, next) => {
   if (error instanceof multer.MulterError || error.statusCode === 400) {
     res.status(400).json({ error: error.message });
@@ -252,6 +234,45 @@ function isValidCategory(category) {
       typeof category.label === "string" &&
       category.label.trim()
   );
+}
+
+async function resolveSellerSnapshot(seller) {
+  if (!seller || typeof seller !== "object") {
+    return {
+      email: null,
+      name: null,
+      userId: null,
+    };
+  }
+
+  const id = typeof seller.id === "string" ? seller.id : null;
+  const email = typeof seller.email === "string" ? seller.email : null;
+  const name = typeof seller.name === "string" ? seller.name : null;
+
+  if (!id && !email) {
+    return {
+      email,
+      name,
+      userId: null,
+    };
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [id ? { id } : null, email ? { email } : null].filter(Boolean),
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+  });
+
+  return {
+    email: email || user?.email || null,
+    name: name || user?.name || null,
+    userId: user?.id || null,
+  };
 }
 
 async function deleteUploadedFiles(files = []) {

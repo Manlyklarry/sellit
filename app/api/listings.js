@@ -5,6 +5,10 @@ import cache from "../utils/cache";
 import client from "./client";
 
 const listingsCacheKey = "listings";
+const placeholderTitleWords = /\b(test|testing|sample|placeholder|upload|delete)\b/gi;
+const placeholderDescriptionPattern = /\b(test|testing|sample|placeholder|endpoint)\b/i;
+const fallbackDescription =
+  "A local marketplace item in good condition. Message the seller to confirm availability and pickup details.";
 
 function getFileName(uri, index) {
   const name = uri.split("/").pop();
@@ -35,9 +39,36 @@ function normalizeListing(listing) {
 
   return {
     ...listing,
+    description: normalizeListingDescription(listing.description),
+    title: normalizeListingTitle(listing.title),
     price: Number(listing.price),
     image: imageUrl ? { uri: imageUrl } : null,
   };
+}
+
+function normalizeListingDescription(description) {
+  const value = String(description || "").trim();
+
+  if (!value || placeholderDescriptionPattern.test(value)) {
+    return fallbackDescription;
+  }
+
+  return value;
+}
+
+function normalizeListingTitle(title) {
+  const originalTitle = String(title || "").trim();
+  const cleanedTitle = originalTitle
+    .replace(placeholderTitleWords, "")
+    .replace(/\blisting\b/gi, "item")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!cleanedTitle || /^item$/i.test(cleanedTitle)) {
+    return "Marketplace item";
+  }
+
+  return cleanedTitle;
 }
 
 export async function getListings() {
@@ -103,7 +134,7 @@ function isOffline(networkState) {
 
 export function addListing(listing, onUploadProgress) {
   const formData = client.createFormData({
-    title: listing.title,
+    title: normalizeListingTitle(listing.title),
     price: listing.price,
     category: listing.category,
     description: listing.description,

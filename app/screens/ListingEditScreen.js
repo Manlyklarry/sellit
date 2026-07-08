@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
@@ -13,8 +14,10 @@ import {
   SubmitButton,
 } from "../components/forms";
 import LocationPicker from "../components/LocationPicker";
+import ThemeToggle from "../components/ThemeToggle";
 import UploadScreen from "../components/UploadScreen";
 import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 import useLocation from "../hooks/useLocation";
 
 const categories = [
@@ -94,6 +97,8 @@ const initialValues = {
 };
 
 function ListingEditScreen() {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
   const closeUploadTimer = useRef(null);
   const [uploadDone, setUploadDone] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -174,7 +179,28 @@ function ListingEditScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.heading}>New Listing</Text>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.eyebrow}>Create</Text>
+            <Text style={styles.heading}>New listing</Text>
+          </View>
+          <ThemeToggle compact />
+        </View>
+        <View style={styles.tipPanel}>
+          <View style={styles.tipIcon}>
+            <MaterialCommunityIcons
+              color={theme.accent}
+              name="creation"
+              size={20}
+            />
+          </View>
+          <View style={styles.tipTextWrap}>
+            <Text style={styles.tipTitle}>Listings with clear photos sell faster</Text>
+            <Text style={styles.tipText}>
+              Add a direct title, fair price, category, and pickup location.
+            </Text>
+          </View>
+        </View>
 
         <AppForm
           initialValues={initialValues}
@@ -182,31 +208,32 @@ function ListingEditScreen() {
           validationSchema={validationSchema}
         >
           {uploadError ? <Text style={styles.error}>{uploadError}</Text> : null}
-          <View style={styles.section}>
+          <View style={styles.panel}>
             <Text style={styles.label}>Photos</Text>
             <FormImagePicker imageLimit={6} name="images" />
           </View>
 
-          <AppFormField
-            autoCorrect={false}
-            icon="format-title"
-            name="title"
-            placeholder="Name of item"
-          />
-          <AppFormField
-            icon="cash"
-            keyboardType="numeric"
-            name="price"
-            placeholder="Price Ghc"
-            width={140}
-          />
-          <AppFormPicker
-            items={categories}
-            name="category"
-            placeholder="Category"
-            title="Select category"
-          />
-          <View style={styles.descriptionContainer}>
+          <View style={styles.panel}>
+            <Text style={styles.label}>Details</Text>
+            <AppFormField
+              autoCorrect={false}
+              icon="format-title"
+              name="title"
+              placeholder="Name of item"
+            />
+            <AppFormField
+              icon="cash"
+              keyboardType="numeric"
+              name="price"
+              placeholder="Price Ghc"
+              width={140}
+            />
+            <AppFormPicker
+              items={categories}
+              name="category"
+              placeholder="Category"
+              title="Select category"
+            />
             <AppFormField
               multiline
               name="description"
@@ -215,14 +242,17 @@ function ListingEditScreen() {
               textAlignVertical="top"
             />
           </View>
-          <LocationPicker
-            address={address}
-            error={locationError}
-            loading={locationLoading || geocoding}
-            location={location}
-            onRefresh={getLocation}
-            refreshing={locationLoading || geocoding}
-          />
+          <View style={styles.panel}>
+            <Text style={styles.label}>Pickup</Text>
+            <LocationPicker
+              address={address}
+              error={locationError}
+              loading={locationLoading || geocoding}
+              location={location}
+              onRefresh={getLocation}
+              refreshing={locationLoading || geocoding}
+            />
+          </View>
           <SubmitButton title="Post" />
         </AppForm>
       </ScrollView>
@@ -230,38 +260,86 @@ function ListingEditScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  descriptionContainer: {
-    marginTop: 0,
-  },
+const createStyles = (theme) =>
+  StyleSheet.create({
   error: {
-    color: colors.danger,
+    color: theme.danger,
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 12,
   },
   heading: {
-    color: colors.black,
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 20,
+    color: theme.foreground,
+    fontSize: 30,
+    fontWeight: "900",
   },
   label: {
-    color: colors.black,
+    color: theme.foreground,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 8,
   },
   screen: {
     flex: 1,
-    backgroundColor: colors.light,
-  },
-  section: {
-    marginBottom: 10,
+    backgroundColor: theme.background,
   },
   scrollContent: {
     padding: 20,
     paddingBottom: 120,
+  },
+  eyebrow: {
+    color: theme.secondary,
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  panel: {
+    backgroundColor: theme.card,
+    borderColor: theme.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 14,
+  },
+  tipIcon: {
+    alignItems: "center",
+    backgroundColor: theme.accentSoft,
+    borderRadius: 14,
+    height: 42,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 42,
+  },
+  tipPanel: {
+    alignItems: "center",
+    backgroundColor: theme.cardMuted,
+    borderColor: theme.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    marginBottom: 16,
+    padding: 14,
+  },
+  tipText: {
+    color: theme.muted,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  tipTextWrap: {
+    flex: 1,
+  },
+  tipTitle: {
+    color: theme.foreground,
+    fontSize: 14,
+    fontWeight: "900",
   },
 });
 

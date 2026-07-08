@@ -1,7 +1,7 @@
 import LottieView from "lottie-react-native";
 import { StyleSheet, Text, View } from "react-native";
 
-import colors from "../config/colors";
+import { useAppTheme } from "../config/theme";
 
 function AppActivityIndicator({
   compact = false,
@@ -9,6 +9,9 @@ function AppActivityIndicator({
   size = 74,
   style,
 }) {
+  const { theme } = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={[styles.container, compact && styles.compact, style]}>
       <LottieView
@@ -22,7 +25,8 @@ function AppActivityIndicator({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) =>
+  StyleSheet.create({
   compact: {
     paddingVertical: 4,
   },
@@ -32,7 +36,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   message: {
-    color: colors.medium,
+    color: theme.muted,
     fontSize: 13,
     fontWeight: "700",
     marginTop: -6,

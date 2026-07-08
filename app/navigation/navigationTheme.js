@@ -1,17 +1,20 @@
-import { DefaultTheme } from "@react-navigation/native";
+import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 
-import colors from "../config/colors";
+function createNavigationTheme(theme) {
+  const baseTheme = theme.mode === "dark" ? DarkTheme : DefaultTheme;
 
-const navigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: colors.light,
-    border: "rgba(0, 0, 0, 0.08)",
-    card: colors.white,
-    primary: colors.primary,
-    text: colors.black,
-  },
-};
+  return {
+    ...baseTheme,
+    dark: theme.mode === "dark",
+    colors: {
+      ...baseTheme.colors,
+      background: theme.background,
+      border: theme.border,
+      card: theme.card,
+      primary: theme.primary,
+      text: theme.foreground,
+    },
+  };
+}
 
-export default navigationTheme;
+export default createNavigationTheme;
