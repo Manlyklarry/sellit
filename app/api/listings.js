@@ -3,12 +3,12 @@ import NetInfo from "@react-native-community/netinfo";
 import api from "../config/api";
 import cache from "../utils/cache";
 import client from "./client";
+import { API_ENDPOINTS } from "./endpoints";
 
 const listingsCacheKey = "listings";
-const placeholderTitleWords = /\b(test|testing|sample|placeholder|upload|delete)\b/gi;
-const placeholderDescriptionPattern = /\b(test|testing|sample|placeholder|endpoint)\b/i;
 const fallbackDescription =
   "A local marketplace item in good condition. Message the seller to confirm availability and pickup details.";
+const fallbackTitle = "Marketplace item";
 
 function getFileName(uri, index) {
   const name = uri.split("/").pop();
@@ -34,6 +34,16 @@ function getImageUrl(listing) {
   return `${api.baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
+function getAssetUrl(path) {
+  if (!path) return null;
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  return `${api.baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 function normalizeListing(listing) {
   const imageUrl = getImageUrl(listing);
 
@@ -43,32 +53,25 @@ function normalizeListing(listing) {
     title: normalizeListingTitle(listing.title),
     price: Number(listing.price),
     image: imageUrl ? { uri: imageUrl } : null,
+    sellerDisplayName:
+      listing.sellerUsername || listing.sellerName || "Local seller",
+    sellerImage: getAssetUrl(listing.sellerImage),
+    sellerImageSource: listing.sellerImage
+      ? { uri: getAssetUrl(listing.sellerImage) }
+      : null,
   };
 }
 
 function normalizeListingDescription(description) {
   const value = String(description || "").trim();
 
-  if (!value || placeholderDescriptionPattern.test(value)) {
-    return fallbackDescription;
-  }
-
-  return value;
+  return value || fallbackDescription;
 }
 
 function normalizeListingTitle(title) {
-  const originalTitle = String(title || "").trim();
-  const cleanedTitle = originalTitle
-    .replace(placeholderTitleWords, "")
-    .replace(/\blisting\b/gi, "item")
-    .replace(/\s+/g, " ")
-    .trim();
+  const value = String(title || "").replace(/\s+/g, " ").trim();
 
-  if (!cleanedTitle || /^item$/i.test(cleanedTitle)) {
-    return "Marketplace item";
-  }
-
-  return cleanedTitle;
+  return value || fallbackTitle;
 }
 
 export async function getListings() {
@@ -83,7 +86,7 @@ export async function getListings() {
   }
 
   try {
-    const data = await client.get("/api/listings");
+    const data = await client.get(API_ENDPOINTS.listings.root);
     const listings = (data?.listings || []).map(normalizeListing);
 
     await cacheListings(listings);
@@ -105,8 +108,17 @@ export async function getListings() {
   }
 }
 
-export async function deleteListing(id) {
-  await client.delete(`/api/listings/${id}`);
+export async function getListing(id) {
+  const data = await client.get(API_ENDPOINTS.listings.byId(id));
+  return data?.listing ? normalizeListing(data.listing) : null;
+}
+
+export async function deleteListing(id, user) {
+  await client.delete(API_ENDPOINTS.listings.byId(id), {
+    body: {
+      user,
+    },
+  });
   await removeCachedListing(id);
 }
 
@@ -150,5 +162,9 @@ export function addListing(listing, onUploadProgress) {
     });
   });
 
-  return client.postMultipart("/api/listings", formData, onUploadProgress);
+  return client.postMultipart(
+    API_ENDPOINTS.listings.root,
+    formData,
+    onUploadProgress
+  );
 }

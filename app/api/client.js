@@ -21,8 +21,8 @@ async function get(endpoint, { timeout = defaultTimeout } = {}) {
   return request(endpoint, { method: "GET", timeout });
 }
 
-async function del(endpoint, { timeout = defaultTimeout } = {}) {
-  return request(endpoint, { method: "DELETE", timeout });
+async function del(endpoint, { body, timeout = defaultTimeout } = {}) {
+  return request(endpoint, { body, method: "DELETE", timeout });
 }
 
 async function postJson(endpoint, body, { timeout = defaultTimeout } = {}) {
@@ -49,6 +49,7 @@ async function request(
       method,
       signal: controller.signal,
       headers,
+      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     const text = await response.text();
@@ -75,11 +76,20 @@ async function request(
 }
 
 function postMultipart(endpoint, formData, onUploadProgress) {
+  return sendMultipart("POST", endpoint, formData, onUploadProgress);
+}
+
+function putMultipart(endpoint, formData, onUploadProgress) {
+  return sendMultipart("PUT", endpoint, formData, onUploadProgress);
+}
+
+function sendMultipart(method, endpoint, formData, onUploadProgress) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
 
-    request.open("POST", `${api.baseUrl}${endpoint}`);
+    request.open(method, `${api.baseUrl}${endpoint}`);
     request.setRequestHeader("Origin", api.origin);
+    request.withCredentials = true;
 
     request.upload.onprogress = ({ lengthComputable, loaded, total }) => {
       if (!lengthComputable || !onUploadProgress) return;
@@ -138,6 +148,7 @@ const client = {
   get,
   postJson,
   postMultipart,
+  putMultipart,
 };
 
 export default client;

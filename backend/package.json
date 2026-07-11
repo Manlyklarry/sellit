@@ -9,6 +9,7 @@
     "dev:all": "npm run dev:api",
     "dev:api": "nodemon --config nodemon.json src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
@@ -30,5 +31,8 @@
     "@better-auth/cli": "^1.4.21",
     "nodemon": "^3.1.11",
     "prisma": "^7.8.0"
+  },
+  "engines": {
+    "node": "20.19.x"
   }
 }

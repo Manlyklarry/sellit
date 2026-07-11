@@ -1,7 +1,6 @@
-const placeholderTitleWords = /\b(test|testing|sample|placeholder|upload|delete)\b/gi;
-const placeholderDescriptionPattern = /\b(test|testing|sample|placeholder|endpoint)\b/i;
 const fallbackDescription =
   "A local marketplace item in good condition. Message the seller to confirm availability and pickup details.";
+const fallbackTitle = "Marketplace item";
 
 export function formatListing(listing) {
   const images = listing.images.map((image) => ({
@@ -20,8 +19,10 @@ export function formatListing(listing) {
     categoryLabel: listing.categoryLabel,
     description: normalizeListingDescription(listing.description),
     location: listing.location,
-    sellerEmail: listing.sellerEmail,
-    sellerName: listing.sellerName,
+    sellerEmail: listing.seller?.email || listing.sellerEmail,
+    sellerImage: listing.seller?.image || null,
+    sellerName: listing.seller?.name || listing.sellerName,
+    sellerUsername: listing.seller?.username || null,
     sellerUserId: listing.sellerUserId,
     createdAt: listing.createdAt,
     updatedAt: listing.updatedAt,
@@ -33,24 +34,11 @@ export function formatListing(listing) {
 export function normalizeListingDescription(description) {
   const value = String(description || "").trim();
 
-  if (!value || placeholderDescriptionPattern.test(value)) {
-    return fallbackDescription;
-  }
-
-  return value;
+  return value || fallbackDescription;
 }
 
 export function normalizeListingTitle(title) {
-  const originalTitle = String(title || "").trim();
-  const cleanedTitle = originalTitle
-    .replace(placeholderTitleWords, "")
-    .replace(/\blisting\b/gi, "item")
-    .replace(/\s+/g, " ")
-    .trim();
+  const value = String(title || "").replace(/\s+/g, " ").trim();
 
-  if (!cleanedTitle || /^item$/i.test(cleanedTitle)) {
-    return "Marketplace item";
-  }
-
-  return cleanedTitle;
+  return value || fallbackTitle;
 }

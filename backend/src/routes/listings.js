@@ -64,10 +64,41 @@ router.get("/", async (_req, res, next) => {
             createdAt: "asc",
           },
         },
+        seller: {
+          select: sellerSelect,
+        },
       },
     });
 
     res.json({ listings: listings.map(formatListing) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id", async (req, res, next) => {
+  try {
+    const listing = await prisma.listing.findUnique({
+      where: {
+        id: req.params.id,
+      },
+      include: {
+        images: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        seller: {
+          select: sellerSelect,
+        },
+      },
+    });
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found." });
+    }
+
+    res.json({ listing: formatListing(listing) });
   } catch (error) {
     next(error);
   }
@@ -82,6 +113,13 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
     const description = normalizeListingDescription(req.body.description);
     const title = normalizeListingTitle(req.body.title);
     const sellerSnapshot = await resolveSellerSnapshot(seller);
+
+    if (!sellerSnapshot.userId && !sellerSnapshot.email) {
+      await deleteUploadedFiles(req.files);
+      return res.status(401).json({
+        error: "Sign in before creating a listing.",
+      });
+    }
 
     if (!title || !description || !isValidCategory(category)) {
       await deleteUploadedFiles(req.files);
@@ -125,6 +163,9 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
       },
       include: {
         images: true,
+        seller: {
+          select: sellerSelect,
+        },
       },
     });
 
@@ -176,6 +217,7 @@ router.post("/:id/inquiries", async (req, res, next) => {
 
 router.delete("/:id", async (req, res, next) => {
   try {
+    const requester = req.body?.user || {};
     const listing = await prisma.listing.findUnique({
       where: {
         id: req.params.id,
@@ -187,6 +229,14 @@ router.delete("/:id", async (req, res, next) => {
 
     if (!listing) {
       return res.status(404).json({ error: "Listing not found." });
+    }
+
+    if (!canManageListing(requester, listing)) {
+      return res.status(getManageListingStatus(requester)).json({
+        error: requester?.id || requester?.email
+          ? "You can only delete your own listings."
+          : "Sign in before deleting a listing.",
+      });
     }
 
     await prisma.listing.delete({
@@ -219,6 +269,23 @@ function parseJsonField(value) {
   } catch {
     return null;
   }
+}
+
+function canManageListing(user, listing) {
+  if (!listing.sellerUserId && !listing.sellerEmail) {
+    return false;
+  }
+
+  return Boolean(
+    (user?.id && listing.sellerUserId && user.id === listing.sellerUserId) ||
+      (user?.email &&
+        listing.sellerEmail &&
+        user.email.toLowerCase() === listing.sellerEmail.toLowerCase())
+  );
+}
+
+function getManageListingStatus(user) {
+  return user?.id || user?.email ? 403 : 401;
 }
 
 function parsePrice(value) {
@@ -264,7 +331,9 @@ async function resolveSellerSnapshot(seller) {
     select: {
       id: true,
       email: true,
+      image: true,
       name: true,
+      username: true,
     },
   });
 
@@ -274,6 +343,14 @@ async function resolveSellerSnapshot(seller) {
     userId: user?.id || null,
   };
 }
+
+const sellerSelect = {
+  email: true,
+  id: true,
+  image: true,
+  name: true,
+  username: true,
+};
 
 async function deleteUploadedFiles(files = []) {
   await Promise.allSettled(

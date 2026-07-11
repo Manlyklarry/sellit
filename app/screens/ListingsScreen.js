@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Animated,
   FlatList,
@@ -12,13 +12,13 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getListings, removeCachedListing } from "../api/listings";
 import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
 import ThemeToggle from "../components/ThemeToggle";
 import { useAppTheme } from "../config/theme";
+import useListings from "../hooks/useListings";
 import { FEED_ROUTES } from "../navigation/routes";
-import { filterListings, getListingCategory } from "../utils/listingFilters";
+import { getListingCategory } from "../utils/listingFilters";
 import formatCurrency from "../utils/currency";
 import { listingCategories, sampleListings } from "./listingsData";
 
@@ -26,54 +26,22 @@ function ListingsScreen({ navigation, route }) {
   const { theme } = useAppTheme();
   const styles = createStyles(theme);
   const headerOpacity = useRef(new Animated.Value(0)).current;
-  const [feedListings, setFeedListings] = useState(sampleListings);
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [usingCache, setUsingCache] = useState(false);
-
-  const filteredListings = useMemo(
-    () =>
-      filterListings(feedListings, {
-        query: searchQuery,
-        selectedCategory,
-      }),
-    [feedListings, searchQuery, selectedCategory]
-  );
-
-  const hasActiveFilters =
-    searchQuery.trim().length > 0 || selectedCategory !== "All";
-
-  const loadListings = useCallback(async ({ refreshingFeed = false } = {}) => {
-    if (refreshingFeed) {
-      setRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-
-    try {
-      const result = await getListings();
-
-      if (result.data.length) {
-        setFeedListings(result.data);
-      }
-
-      setError(result.error?.message || null);
-      setUsingCache(result.stale);
-    } catch (loadError) {
-      setError(loadError.message);
-      setUsingCache(false);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadListings();
-  }, [loadListings]);
+  const {
+    clearFilters,
+    error,
+    filteredListings,
+    hasActiveFilters,
+    isLoading,
+    listings,
+    loadListings,
+    refreshing,
+    removeListing,
+    searchQuery,
+    selectedCategory,
+    setSearchQuery,
+    setSelectedCategory,
+    usingCache,
+  } = useListings();
 
   useEffect(() => {
     Animated.timing(headerOpacity, {
@@ -83,28 +51,16 @@ function ListingsScreen({ navigation, route }) {
     }).start();
   }, [headerOpacity]);
 
-  const removeListingFromFeed = useCallback((deletedListingId) => {
-    setFeedListings((currentListings) =>
-      currentListings.filter((listing) => listing.id !== deletedListingId)
-    );
-  }, []);
-
   useEffect(() => {
     const deletedListingId = route.params?.deletedListingId;
     if (!deletedListingId) return;
 
-    removeListingFromFeed(deletedListingId);
-    removeCachedListing(deletedListingId);
+    removeListing(deletedListingId);
     navigation.setParams({ deletedListingId: undefined });
-  }, [navigation, removeListingFromFeed, route.params?.deletedListingId]);
+  }, [navigation, removeListing, route.params?.deletedListingId]);
 
   const handleRefresh = () => {
     loadListings({ refreshingFeed: true });
-  };
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("All");
   };
 
   return (
@@ -181,7 +137,7 @@ function ListingsScreen({ navigation, route }) {
               </View>
               <View style={styles.statsRow}>
                 <View>
-                  <Text style={styles.statValue}>{feedListings.length}</Text>
+                  <Text style={styles.statValue}>{listings.length}</Text>
                   <Text style={styles.statLabel}>live listings</Text>
                 </View>
                 <View style={styles.statDivider} />
@@ -305,6 +261,8 @@ function ListingsScreen({ navigation, route }) {
                 image={image}
                 location={item.location?.address || "Accra"}
                 meta={getListingCategory(item)}
+                sellerImage={item.sellerImageSource}
+                sellerName={item.sellerDisplayName}
                 onPress={() =>
                   navigation.navigate(FEED_ROUTES.DETAILS, {
                     listing: { ...item, image },

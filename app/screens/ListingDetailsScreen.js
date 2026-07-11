@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { sendListingInquiry } from "../api/notifications";
-import { deleteListing } from "../api/listings";
-import { getCurrentUser } from "../auth/session";
+import { deleteListing, getListing } from "../api/listings";
 import AppButton from "../components/AppButton";
 import ListItem from "../components/ListItem";
 import { useAppTheme } from "../config/theme";
+import useCurrentUser from "../hooks/useCurrentUser";
 import { FEED_ROUTES } from "../navigation/routes";
 import formatCurrency from "../utils/currency";
 
@@ -20,24 +20,33 @@ const defaultListing = {
 function ListingDetailsScreen({ navigation, route }) {
   const { theme } = useAppTheme();
   const styles = createStyles(theme);
-  const listing = route.params?.listing || defaultListing;
-  const [currentUser, setCurrentUser] = useState(null);
+  const [listing, setListing] = useState(route.params?.listing || defaultListing);
+  const { currentUser } = useCurrentUser();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSendingInquiry, setIsSendingInquiry] = useState(false);
   const isBackendListing = typeof listing.id === "string";
   const isOwnListing = isCurrentUsersListing(currentUser, listing);
 
   useEffect(() => {
-    let mounted = true;
+    if (!isBackendListing) return undefined;
 
-    getCurrentUser().then((user) => {
-      if (mounted) setCurrentUser(user);
-    });
+    let active = true;
+
+    getListing(listing.id)
+      .then((freshListing) => {
+        if (active && freshListing) {
+          setListing((currentListing) => ({
+            ...freshListing,
+            image: freshListing.image || currentListing.image,
+          }));
+        }
+      })
+      .catch(() => null);
 
     return () => {
-      mounted = false;
+      active = false;
     };
-  }, []);
+  }, [isBackendListing, listing.id]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -61,7 +70,7 @@ function ListingDetailsScreen({ navigation, route }) {
     setIsDeleting(true);
 
     try {
-      await deleteListing(listing.id);
+      await deleteListing(listing.id, currentUser);
       navigation.navigate(FEED_ROUTES.LISTINGS, {
         deletedListingId: listing.id,
       });
@@ -167,9 +176,9 @@ function ListingDetailsScreen({ navigation, route }) {
       </View>
       <View style={styles.userContainer}>
         <ListItem
-          title={listing.sellerName || "MANLYKLARRY"}
+          title={listing.sellerDisplayName || listing.sellerName || "Local seller"}
           subTitle="5 active listings"
-          image={require("../assets/profiles/larry.jpeg")}
+          image={listing.sellerImageSource}
           showChevron
           onPress={() => console.log("seller")}
         />

@@ -4,6 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
 
 import { signUp } from "../api/auth";
+import { updateProfile } from "../api/users";
+import { getCurrentUser } from "../auth/session";
 import AppForm from "../components/forms/AppForm";
 import AppFormField from "../components/forms/AppFormField";
 import ErrorMessage from "../components/forms/ErrorMessage";
@@ -16,6 +18,14 @@ const validationSchema = Yup.object().shape({
   name: Yup.string()
     .required("Name is required.")
     .min(2, "Name must be at least 2 characters."),
+  username: Yup.string()
+    .trim()
+    .lowercase()
+    .test(
+      "username-format",
+      "Username must be 3-24 characters using letters, numbers, or underscores.",
+      (value) => !value || /^[a-z0-9_]{3,24}$/.test(value)
+    ),
   email: Yup.string()
     .required("Email is required.")
     .email("Enter a valid email address."),
@@ -38,11 +48,18 @@ function RegisterScreen({ navigation }) {
         <Text style={styles.heading}>Create account</Text>
 
         <AppForm
-          initialValues={{ name: "", email: "", password: "" }}
+          initialValues={{ name: "", username: "", email: "", password: "" }}
           onSubmit={async (values, { setStatus }) => {
             try {
               setStatus(null);
               await signUp(values);
+              if (values.username.trim()) {
+                await updateProfile({
+                  name: values.name,
+                  user: await getCurrentUser(),
+                  username: values.username,
+                });
+              }
               navigation.getParent()?.replace(ROOT_ROUTES.APP);
             } catch (error) {
               setStatus(error.message);
@@ -57,6 +74,14 @@ function RegisterScreen({ navigation }) {
             name="name"
             placeholder="Name"
             textContentType="name"
+          />
+          <AppFormField
+            autoCapitalize="none"
+            autoCorrect={false}
+            icon="at"
+            name="username"
+            placeholder="Username"
+            textContentType="username"
           />
           <AppFormField
             autoCapitalize="none"

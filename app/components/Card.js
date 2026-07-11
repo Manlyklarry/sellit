@@ -8,6 +8,8 @@ function Card({
   location = "East Legon",
   meta = "Listed today",
   onPress,
+  sellerImage,
+  sellerName = "Local seller",
   subTitle,
   title,
 }) {
@@ -45,7 +47,20 @@ function Card({
           </Text>
         </View>
         <View style={styles.footerRow}>
-          <Text style={styles.sellerText}>Verified seller</Text>
+          <View style={styles.sellerRow}>
+            {sellerImage ? (
+              <Image source={sellerImage} style={styles.sellerImage} />
+            ) : (
+              <View style={styles.sellerInitial}>
+                <Text style={styles.sellerInitialText}>
+                  {sellerName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.sellerText} numberOfLines={1}>
+              {sellerName}
+            </Text>
+          </View>
           <MaterialCommunityIcons
             color={theme.primary}
             name="arrow-top-right"
@@ -140,6 +155,32 @@ const createStyles = (theme) =>
     color: theme.foreground,
     fontSize: 13,
     fontWeight: "800",
+    marginLeft: 8,
+    maxWidth: 190,
+  },
+  sellerImage: {
+    borderRadius: 14,
+    height: 28,
+    width: 28,
+  },
+  sellerInitial: {
+    alignItems: "center",
+    backgroundColor: theme.secondary,
+    borderRadius: 14,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+  sellerInitialText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  sellerRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flex: 1,
+    minWidth: 0,
   },
   title: {
     color: theme.foreground,

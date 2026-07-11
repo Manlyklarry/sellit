@@ -4,8 +4,8 @@ import {
   registerForPushNotifications,
   unregisterCurrentPushToken,
 } from "../notifications/pushNotifications";
+import { API_ENDPOINTS } from "./endpoints";
 
-const authBaseUrl = `${api.baseUrl}/api/auth`;
 const requestTimeout = 10000;
 
 async function authRequest(path, { body, method = "POST" } = {}) {
@@ -13,9 +13,10 @@ async function authRequest(path, { body, method = "POST" } = {}) {
   const timeout = setTimeout(() => controller.abort(), requestTimeout);
 
   try {
-    const response = await fetch(`${authBaseUrl}${path}`, {
+    const response = await fetch(`${api.baseUrl}${path}`, {
       method,
       signal: controller.signal,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Origin: api.origin,
@@ -44,7 +45,7 @@ async function authRequest(path, { body, method = "POST" } = {}) {
 }
 
 export function signUp({ email, name, password }) {
-  return authenticate("/sign-up/email", {
+  return authenticate(API_ENDPOINTS.auth.signUpEmail, {
     body: {
       email,
       name,
@@ -58,7 +59,7 @@ export function signUp({ email, name, password }) {
 }
 
 export function signIn({ email, password }) {
-  return authenticate("/sign-in/email", {
+  return authenticate(API_ENDPOINTS.auth.signInEmail, {
     body: {
       email,
       password,
@@ -71,7 +72,7 @@ export function signIn({ email, password }) {
 
 export async function signOut() {
   try {
-    return await authRequest("/sign-out");
+    return await authRequest(API_ENDPOINTS.auth.signOut);
   } finally {
     await unregisterCurrentPushToken();
     await clearCurrentUser();

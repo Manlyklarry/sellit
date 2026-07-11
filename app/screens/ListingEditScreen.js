@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Yup from "yup";
 
-import { addListing } from "../api/listings";
 import { getCurrentUser } from "../auth/session";
 import {
   AppForm,
@@ -18,6 +16,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import UploadScreen from "../components/UploadScreen";
 import colors from "../config/colors";
 import { useAppTheme } from "../config/theme";
+import useListingUpload from "../hooks/useListingUpload";
 import useLocation from "../hooks/useLocation";
 
 const categories = [
@@ -99,11 +98,7 @@ const initialValues = {
 function ListingEditScreen() {
   const { theme } = useAppTheme();
   const styles = createStyles(theme);
-  const closeUploadTimer = useRef(null);
-  const [uploadDone, setUploadDone] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadVisible, setUploadVisible] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
+  const { uploadListing, uploadState } = useListingUpload();
   const {
     address,
     error: locationError,
@@ -113,13 +108,6 @@ function ListingEditScreen() {
     location,
   } =
     useLocation();
-
-  useEffect(
-    () => () => {
-      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
-    },
-    []
-  );
 
   const handleSubmit = async (values, { resetForm }) => {
     const currentUser = await getCurrentUser();
@@ -139,41 +127,19 @@ function ListingEditScreen() {
     };
 
     try {
-      setUploadError(null);
-      setUploadDone(false);
-      setUploadProgress(0);
-      setUploadVisible(true);
-
-      await addListing(listing, (progress) => {
-        setUploadProgress(progress);
-      });
-
-      setUploadProgress(1);
-      setUploadDone(true);
+      await uploadListing(listing);
       resetForm({ values: initialValues });
-
-      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
-      closeUploadTimer.current = setTimeout(() => {
-        setUploadVisible(false);
-        setUploadDone(false);
-        setUploadProgress(0);
-        closeUploadTimer.current = null;
-      }, 2400);
-    } catch (error) {
-      if (closeUploadTimer.current) clearTimeout(closeUploadTimer.current);
-      setUploadVisible(false);
-      setUploadDone(false);
-      setUploadProgress(0);
-      setUploadError(error.message);
+    } catch {
+      return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <UploadScreen
-        done={uploadDone}
-        progress={uploadProgress}
-        visible={uploadVisible}
+        done={uploadState.done}
+        progress={uploadState.progress}
+        visible={uploadState.visible}
       />
       <ScrollView
         keyboardShouldPersistTaps="handled"
@@ -207,7 +173,9 @@ function ListingEditScreen() {
           onSubmit={handleSubmit}
           validationSchema={validationSchema}
         >
-          {uploadError ? <Text style={styles.error}>{uploadError}</Text> : null}
+          {uploadState.error ? (
+            <Text style={styles.error}>{uploadState.error}</Text>
+          ) : null}
           <View style={styles.panel}>
             <Text style={styles.label}>Photos</Text>
             <FormImagePicker imageLimit={6} name="images" />

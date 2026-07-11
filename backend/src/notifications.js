@@ -1,10 +1,10 @@
-const expoPushUrl = "https://exp.host/--/api/v2/push/send";
+import { env } from "./config/environment.js";
 
 export async function sendPushNotifications(messages) {
   const pushMessages = messages.filter((message) => isExpoPushToken(message.to));
   if (!pushMessages.length) return;
 
-  const response = await fetch(expoPushUrl, {
+  const response = await fetch(env.expoPushUrl, {
     method: "POST",
     headers: {
       Accept: "application/json",
