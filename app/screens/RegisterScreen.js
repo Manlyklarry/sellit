@@ -6,13 +6,14 @@ import * as Yup from "yup";
 import { signUp } from "../api/auth";
 import { updateProfile } from "../api/users";
 import { getCurrentUser } from "../auth/session";
+import { saveSellingType } from "../auth/onboarding";
 import AppForm from "../components/forms/AppForm";
 import AppFormField from "../components/forms/AppFormField";
 import ErrorMessage from "../components/forms/ErrorMessage";
 import SubmitButton from "../components/forms/SubmitButton";
 import ThemeToggle from "../components/ThemeToggle";
 import { useAppTheme } from "../config/theme";
-import { ROOT_ROUTES } from "../navigation/routes";
+import { AUTH_ROUTES, ROOT_ROUTES } from "../navigation/routes";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string()
@@ -34,7 +35,7 @@ const validationSchema = Yup.object().shape({
     .min(6, "Password must be at least 6 characters."),
 });
 
-function RegisterScreen({ navigation }) {
+function RegisterScreen({ navigation, route }) {
   const { theme } = useAppTheme();
   const styles = createStyles(theme);
 
@@ -60,7 +61,16 @@ function RegisterScreen({ navigation }) {
                   username: values.username,
                 });
               }
-              navigation.getParent()?.replace(ROOT_ROUTES.APP);
+              if (route.params?.onboarding) {
+                if (route.params.sellingType) {
+                  await saveSellingType(route.params.sellingType);
+                }
+                navigation.replace(AUTH_ROUTES.ONBOARDING_SUCCESS, {
+                  sellingType: route.params.sellingType,
+                });
+              } else {
+                navigation.getParent()?.replace(ROOT_ROUTES.APP);
+              }
             } catch (error) {
               setStatus(error.message);
             }

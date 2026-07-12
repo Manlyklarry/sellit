@@ -4,8 +4,11 @@ export const ROOT_ROUTES = {
 };
 
 export const AUTH_ROUTES = {
+  HOW_IT_WORKS: "Auth/HowItWorks",
   LOGIN: "Auth/Login",
+  ONBOARDING_SUCCESS: "Auth/OnboardingSuccess",
   REGISTER: "Auth/Register",
+  SELLING_TYPE: "Auth/SellingType",
   WELCOME: "Auth/Welcome",
 };
 
