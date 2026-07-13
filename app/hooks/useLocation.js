@@ -1,5 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
+import { LOCATION_DEFAULTS } from "../config/constants";
+
+export function formatAddress(addressResult) {
+  if (!addressResult) return "";
+
+  const parts = [
+    addressResult.name,
+    addressResult.street,
+    addressResult.district,
+    addressResult.city,
+    addressResult.region,
+    addressResult.country,
+  ].filter(Boolean);
+
+  return [...new Set(parts)].join(", ");
+}
 
 function useLocation() {
   const isMounted = useRef(true);
@@ -9,23 +25,6 @@ function useLocation() {
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const formatAddress = (addressResult) => {
-    if (!addressResult) return "";
-
-    const primaryParts = [
-      addressResult.name,
-      addressResult.street,
-      addressResult.district,
-      addressResult.city,
-    ].filter(Boolean);
-    const secondaryParts = [
-      addressResult.region,
-      addressResult.country,
-    ].filter(Boolean);
-
-    return [...new Set([...primaryParts, ...secondaryParts])].join(", ");
-  };
 
   const reverseGeocode = useCallback(async ({ latitude, longitude }) => {
     if (isMounted.current) setGeocoding(true);
@@ -90,8 +89,8 @@ function useLocation() {
       locationSubscription.current = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          distanceInterval: 10,
-          timeInterval: 5000,
+          distanceInterval: LOCATION_DEFAULTS.distanceIntervalMeters,
+          timeInterval: LOCATION_DEFAULTS.updateIntervalMs,
         },
         (updatedLocation) => {
           if (!isMounted.current) return;

@@ -1,55 +1,32 @@
-import fs from "node:fs";
 import path from "node:path";
 
 import express from "express";
-import multer from "multer";
 
+import { env } from "../config/environment.js";
+import { parseJsonField } from "../http/parsers.js";
+import {
+  createImageUpload,
+  deleteUploadedFiles,
+  handleUploadError,
+} from "../http/uploads.js";
 import {
   notifySellerAboutInquiry,
   notifyUsersAboutNewListing,
 } from "../listingNotifications.js";
-import {
-  formatListing,
-  normalizeListingDescription,
-  normalizeListingTitle,
-} from "../listingPresentation.js";
+import { formatListing } from "../listingPresentation.js";
 import { prisma } from "../prisma.js";
+import {
+  normalizeListingText,
+  validateListingDescription,
+  validateListingTitle,
+} from "../../../shared/listingValidation.js";
 
 const router = express.Router();
-const uploadDirectory = path.join(process.cwd(), "uploads", "listings");
-
-fs.mkdirSync(uploadDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, callback) => {
-    callback(null, uploadDirectory);
-  },
-  filename: (_req, file, callback) => {
-    const extension = path.extname(file.originalname) || ".jpg";
-    const safeName = `${Date.now()}-${Math.round(
-      Math.random() * 1e9
-    )}${extension}`;
-
-    callback(null, safeName);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-    files: 6,
-  },
-  fileFilter: (_req, file, callback) => {
-    if (file.mimetype.startsWith("image/")) {
-      callback(null, true);
-      return;
-    }
-
-    callback(Object.assign(new Error("Only image uploads are supported."), {
-      statusCode: 400,
-    }));
-  },
+const upload = createImageUpload({
+  directory: "listings",
+  fileSize: env.listingImageMaxBytes,
+  files: env.listingImageLimit,
+  message: "Only image uploads are supported.",
 });
 
 router.get("/", async (_req, res, next) => {
@@ -104,14 +81,14 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", upload.array("images", 6), async (req, res, next) => {
+router.post("/", upload.array("images", env.listingImageLimit), async (req, res, next) => {
   try {
     const category = parseJsonField(req.body.category);
     const location = parseJsonField(req.body.location);
     const seller = parseJsonField(req.body.seller);
     const price = parsePrice(req.body.price);
-    const description = normalizeListingDescription(req.body.description);
-    const title = normalizeListingTitle(req.body.title);
+    const description = normalizeListingText(req.body.description);
+    const title = normalizeListingText(req.body.title);
     const sellerSnapshot = await resolveSellerSnapshot(seller);
 
     if (!sellerSnapshot.userId && !sellerSnapshot.email) {
@@ -121,10 +98,12 @@ router.post("/", upload.array("images", 6), async (req, res, next) => {
       });
     }
 
-    if (!title || !description || !isValidCategory(category)) {
+    const textError =
+      validateListingTitle(title) || validateListingDescription(description);
+    if (textError || !isValidCategory(category)) {
       await deleteUploadedFiles(req.files);
       return res.status(400).json({
-        error: "Name of item, price, category, and description are required.",
+        error: textError || "A valid category is required.",
       });
     }
 
@@ -252,24 +231,7 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-router.use((error, _req, res, next) => {
-  if (error instanceof multer.MulterError || error.statusCode === 400) {
-    res.status(400).json({ error: error.message });
-    return;
-  }
-
-  next(error);
-});
-
-function parseJsonField(value) {
-  if (!value || value === "null") return null;
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
+router.use(handleUploadError);
 
 function canManageListing(user, listing) {
   if (!listing.sellerUserId && !listing.sellerEmail) {
@@ -351,17 +313,5 @@ const sellerSelect = {
   name: true,
   username: true,
 };
-
-async function deleteUploadedFiles(files = []) {
-  await Promise.allSettled(
-    files.map((file) => fs.promises.unlink(getUploadedFilePath(file)))
-  );
-}
-
-function getUploadedFilePath(file) {
-  return path.isAbsolute(file.path)
-    ? file.path
-    : path.resolve(process.cwd(), file.path);
-}
 
 export default router;

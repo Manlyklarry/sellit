@@ -12,6 +12,8 @@ version in `.nvmrc` or `.node-version` before running the Expo CLI.
 - `EXPO_PUBLIC_APP_ORIGIN`: Origin sent to the backend for CORS/auth checks.
 - `EXPO_PUBLIC_EXPO_PORT`: Expo dev server port used for derived origins.
   Defaults to `8081`.
+- `EXPO_PUBLIC_CURRENCY_CODE`: ISO 4217 marketplace currency code.
+- `EXPO_PUBLIC_LOCALE`: Locale used for currency and number formatting.
 
 ## Backend
 
@@ -21,7 +23,13 @@ version in `.nvmrc` or `.node-version` before running the Expo CLI.
 - `BETTER_AUTH_SECRET`: Better Auth signing secret.
 - `BETTER_AUTH_URL`: Public backend auth URL.
 - `CORS_ORIGIN`: Comma-separated trusted app origins.
-- `EXPO_PUSH_URL`: Expo push API URL. Defaults to Expo's push endpoint.
+- `EXPO_DEV_PORTS`: Comma-separated Expo ports allowed for private-network
+  development origins when `CORS_ORIGIN` is not exhaustive.
+- `EXPO_PUSH_URL`: Push delivery endpoint. Push delivery is disabled when unset.
+- `PUSH_REQUEST_TIMEOUT_MS`: Push delivery request timeout in milliseconds.
+- `LISTING_IMAGE_LIMIT`: Maximum images accepted per listing.
+- `LISTING_IMAGE_MAX_BYTES`: Maximum size of each listing image.
+- `PROFILE_IMAGE_MAX_BYTES`: Maximum profile image size.
 
 ## Web
 

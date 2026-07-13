@@ -1,45 +1,49 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-const DEFAULT_BACKEND_PORT = "8000";
-const DEFAULT_EXPO_PORT = "8081";
+import { DEVELOPMENT_HOSTS, NETWORK_DEFAULTS } from "./constants";
+import { normalizeBaseUrl } from "../utils/urls";
 
 export function getApiBaseUrl() {
   const configuredUrl = process.env.EXPO_PUBLIC_API_URL;
 
   if (configuredUrl) {
-    return trimTrailingSlash(configuredUrl);
+    return normalizeBaseUrl(configuredUrl, "EXPO_PUBLIC_API_URL");
   }
 
   const host = getExpoHost();
-  const backendPort = process.env.EXPO_PUBLIC_API_PORT || DEFAULT_BACKEND_PORT;
+  const backendPort = process.env.EXPO_PUBLIC_API_PORT || NETWORK_DEFAULTS.apiPort;
 
   if (host) {
     return `http://${host}:${backendPort}`;
   }
 
   if (Platform.OS === "android") {
-    return `http://10.0.2.2:${backendPort}`;
+    return createDevelopmentUrl(DEVELOPMENT_HOSTS.androidEmulator, backendPort);
   }
 
-  return `http://127.0.0.1:${backendPort}`;
+  return createDevelopmentUrl(DEVELOPMENT_HOSTS.loopback, backendPort);
 }
 
 export function getAppOrigin() {
   const configuredOrigin = process.env.EXPO_PUBLIC_APP_ORIGIN;
 
   if (configuredOrigin) {
-    return trimTrailingSlash(configuredOrigin);
+    return normalizeBaseUrl(configuredOrigin, "EXPO_PUBLIC_APP_ORIGIN");
   }
 
   const host = getExpoHost();
-  const expoPort = process.env.EXPO_PUBLIC_EXPO_PORT || DEFAULT_EXPO_PORT;
+  const expoPort = process.env.EXPO_PUBLIC_EXPO_PORT || NETWORK_DEFAULTS.expoPort;
 
   if (host) {
     return `http://${host}:${expoPort}`;
   }
 
-  return `http://localhost:${expoPort}`;
+  return createDevelopmentUrl(DEVELOPMENT_HOSTS.localhost, expoPort);
+}
+
+function createDevelopmentUrl(host, port) {
+  return `http://${host}:${port}`;
 }
 
 function getExpoHost() {
@@ -50,8 +54,4 @@ function getExpoHost() {
     Constants.platform?.hostUri;
 
   return hostUri?.split(":")[0] || null;
-}
-
-function trimTrailingSlash(value) {
-  return value.replace(/\/+$/, "");
 }

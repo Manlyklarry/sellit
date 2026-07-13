@@ -5,8 +5,6 @@ export { default as ListingsScreen } from "./ListingsScreen";
 export { default as HowItWorksScreen } from "./HowItWorksScreen";
 export { default as LoginScreen } from "./LoginScreen";
 export { default as OnboardingSuccessScreen } from "./OnboardingSuccessScreen";
-export { default as PickerDemoScreen } from "./PickerDemoScreen";
 export { default as RegisterScreen } from "./RegisterScreen";
 export { default as SellingTypeScreen } from "./SellingTypeScreen";
-export { default as ViewImageScreen } from "./ViewImageScreen";
 export { default as WelcomeScreen } from "./WelcomeScreen";

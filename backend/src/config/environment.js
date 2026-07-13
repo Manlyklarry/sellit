@@ -1,15 +1,38 @@
 const DEFAULT_API_HOST = "127.0.0.1";
 const DEFAULT_API_PORT = "8000";
 const DEFAULT_EXPO_PORTS = ["8081", "19006"];
+const DEFAULT_LISTING_IMAGE_LIMIT = 6;
+const MEBIBYTE = 1024 * 1024;
+const DEVELOPMENT_HOSTS = ["localhost", "127.0.0.1"];
 
 export const env = {
   apiHost: process.env.HOST || DEFAULT_API_HOST,
   apiPort: process.env.PORT || DEFAULT_API_PORT,
+  betterAuthSecret: process.env.BETTER_AUTH_SECRET,
   betterAuthUrl: process.env.BETTER_AUTH_URL,
   corsOrigins: getCorsOrigins(),
-  expoPushUrl:
-    process.env.EXPO_PUSH_URL || "https://exp.host/--/api/v2/push/send",
+  expoDevPorts: getExpoDevPorts(),
+  expoPushUrl: process.env.EXPO_PUSH_URL || null,
+  listingImageLimit: readPositiveInteger(
+    "LISTING_IMAGE_LIMIT",
+    DEFAULT_LISTING_IMAGE_LIMIT
+  ),
+  listingImageMaxBytes: readPositiveInteger(
+    "LISTING_IMAGE_MAX_BYTES",
+    8 * MEBIBYTE
+  ),
+  profileImageMaxBytes: readPositiveInteger(
+    "PROFILE_IMAGE_MAX_BYTES",
+    4 * MEBIBYTE
+  ),
+  pushRequestTimeoutMs: readPositiveInteger(
+    "PUSH_REQUEST_TIMEOUT_MS",
+    10_000
+  ),
+  databaseUrl: process.env.DATABASE_URL,
 };
+
+validateProductionEnvironment();
 
 export function getAllowedOrigins(originHeader) {
   const expoOrigin = getExpoDevOrigin(originHeader);
@@ -30,19 +53,45 @@ function getCorsOrigins() {
     return configuredOrigins;
   }
 
-  return DEFAULT_EXPO_PORTS.flatMap((port) => [
-    `http://localhost:${port}`,
-    `http://127.0.0.1:${port}`,
-  ]);
+  return getExpoDevPorts().flatMap((port) =>
+    DEVELOPMENT_HOSTS.map((host) => `http://${host}:${port}`)
+  );
+}
+
+function getExpoDevPorts() {
+  const configuredPorts = parseList(process.env.EXPO_DEV_PORTS);
+  return configuredPorts.length ? configuredPorts : DEFAULT_EXPO_PORTS;
 }
 
 function parseOrigins(value) {
-  return value
-    ? value
-        .split(",")
-        .map((origin) => origin.trim())
-        .filter(Boolean)
-    : [];
+  return parseList(value);
+}
+
+function parseList(value) {
+  return value ? value.split(",").map((item) => item.trim()).filter(Boolean) : [];
+}
+
+function readPositiveInteger(name, fallback) {
+  const value = process.env[name];
+  if (!value) return fallback;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer.`);
+  }
+
+  return parsed;
+}
+
+function validateProductionEnvironment() {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const required = ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"];
+  const missing = required.filter((name) => !process.env[name]);
+
+  if (missing.length) {
+    throw new Error(`Missing required production environment: ${missing.join(", ")}`);
+  }
 }
 
 function getExpoDevOrigin(value) {
@@ -57,7 +106,20 @@ function getExpoDevOrigin(value) {
 }
 
 function isExpoDevOrigin(origin) {
-  return /^http:\/\/(10|172\.(1[6-9]|2\d|3[0-1])|192\.168)\.\d{1,3}\.\d{1,3}:(8081|19006)$/.test(
-    origin
+  try {
+    const url = new URL(origin);
+    return (
+      url.protocol === "http:" &&
+      isPrivateNetworkHost(url.hostname) &&
+      env.expoDevPorts.includes(url.port)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isPrivateNetworkHost(hostname) {
+  return /^(10\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])|192\.168)\.\d{1,3}\.\d{1,3}$/.test(
+    hostname
   );
 }

@@ -1,52 +1,14 @@
-import api from "../config/api";
 import { clearCurrentUser, saveCurrentUser } from "../auth/session";
 import {
   registerForPushNotifications,
   unregisterCurrentPushToken,
 } from "../notifications/pushNotifications";
 import { API_ENDPOINTS } from "./endpoints";
-
-const requestTimeout = 10000;
-
-async function authRequest(path, { body, method = "POST" } = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), requestTimeout);
-
-  try {
-    const response = await fetch(`${api.baseUrl}${path}`, {
-      method,
-      signal: controller.signal,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Origin: api.origin,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const text = await response.text();
-    const data = parseResponse(text);
-
-    if (!response.ok) {
-      throw new Error(data?.message || data?.error || "Authentication failed.");
-    }
-
-    return data;
-  } catch (error) {
-    if (error.name !== "AbortError") {
-      throw error;
-    }
-
-    throw new Error(
-      `Could not reach the backend at ${api.baseUrl}. Make sure npm run backend:dev is running and this device is on the same network.`
-    );
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+import client from "./client";
 
 export function signUp({ email, name, password }) {
   return authenticate(API_ENDPOINTS.auth.signUpEmail, {
-    body: {
+    payload: {
       email,
       name,
       password,
@@ -60,7 +22,7 @@ export function signUp({ email, name, password }) {
 
 export function signIn({ email, password }) {
   return authenticate(API_ENDPOINTS.auth.signInEmail, {
-    body: {
+    payload: {
       email,
       password,
     },
@@ -72,15 +34,15 @@ export function signIn({ email, password }) {
 
 export async function signOut() {
   try {
-    return await authRequest(API_ENDPOINTS.auth.signOut);
+    return await client.postJson(API_ENDPOINTS.auth.signOut);
   } finally {
     await unregisterCurrentPushToken();
     await clearCurrentUser();
   }
 }
 
-async function authenticate(path, { fallbackUser, ...options }) {
-  const data = await authRequest(path, options);
+async function authenticate(path, { fallbackUser, payload }) {
+  const data = await client.postJson(path, payload);
   const user = await saveCurrentUser(getUserFromResponse(data) || fallbackUser);
 
   registerForPushNotifications(user);
@@ -90,14 +52,4 @@ async function authenticate(path, { fallbackUser, ...options }) {
 
 function getUserFromResponse(data) {
   return data?.user || data?.data?.user || null;
-}
-
-function parseResponse(text) {
-  if (!text) return null;
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
 }

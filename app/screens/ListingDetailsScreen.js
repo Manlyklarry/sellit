@@ -148,7 +148,7 @@ function ListingDetailsScreen({ navigation, route }) {
               size={18}
             />
             <Text style={styles.factText}>
-              {listing.location?.address || "Accra"}
+              {listing.location?.address || "Location unavailable"}
             </Text>
           </View>
           <View style={styles.fact}>
@@ -157,7 +157,7 @@ function ListingDetailsScreen({ navigation, route }) {
               name="shield-check-outline"
               size={18}
             />
-            <Text style={styles.factText}>Verified seller</Text>
+            <Text style={styles.factText}>Local seller</Text>
           </View>
         </View>
       </View>
@@ -172,15 +172,12 @@ function ListingDetailsScreen({ navigation, route }) {
 
       <View style={styles.sellerHeader}>
         <Text style={styles.panelTitle}>Seller</Text>
-        <Text style={styles.sellerMeta}>Usually replies quickly</Text>
       </View>
       <View style={styles.userContainer}>
         <ListItem
           title={listing.sellerDisplayName || listing.sellerName || "Local seller"}
-          subTitle="5 active listings"
+          subTitle={listing.sellerUsername ? `@${listing.sellerUsername}` : "Marketplace seller"}
           image={listing.sellerImageSource}
-          showChevron
-          onPress={() => console.log("seller")}
         />
       </View>
 

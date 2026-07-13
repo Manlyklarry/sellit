@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { addListing } from "../api/listings";
+import { UI_TIMINGS } from "../config/constants";
 
 const initialUploadState = {
   done: false,
@@ -9,7 +10,7 @@ const initialUploadState = {
   visible: false,
 };
 
-function useListingUpload({ closeDelay = 2400 } = {}) {
+function useListingUpload({ closeDelay = UI_TIMINGS.uploadSuccessMs } = {}) {
   const closeUploadTimer = useRef(null);
   const [uploadState, setUploadState] = useState(initialUploadState);
 

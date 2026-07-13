@@ -1,47 +1,17 @@
 import NetInfo from "@react-native-community/netinfo";
 
 import api from "../config/api";
+import { CACHE_KEYS, UPLOAD_DEFAULTS } from "../config/constants";
 import cache from "../utils/cache";
+import { toAbsoluteUrl } from "../utils/urls";
+import { getUploadFile } from "../utils/uploads";
+import { LISTING_FALLBACKS } from "../../shared/listingValidation";
 import client from "./client";
 import { API_ENDPOINTS } from "./endpoints";
 
-const listingsCacheKey = "listings";
-const fallbackDescription =
-  "A local marketplace item in good condition. Message the seller to confirm availability and pickup details.";
-const fallbackTitle = "Marketplace item";
-
-function getFileName(uri, index) {
-  const name = uri.split("/").pop();
-  return name || `listing-${index + 1}.jpg`;
-}
-
-function getMimeType(uri) {
-  const extension = uri.split(".").pop()?.toLowerCase();
-
-  if (extension === "png") return "image/png";
-  if (extension === "webp") return "image/webp";
-  return "image/jpeg";
-}
-
 function getImageUrl(listing) {
   const path = listing.imageUrl || listing.images?.[0]?.url;
-  if (!path) return null;
-
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
-
-  return `${api.baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
-}
-
-function getAssetUrl(path) {
-  if (!path) return null;
-
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
-
-  return `${api.baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+  return toAbsoluteUrl(path, api.baseUrl);
 }
 
 function normalizeListing(listing) {
@@ -55,9 +25,9 @@ function normalizeListing(listing) {
     image: imageUrl ? { uri: imageUrl } : null,
     sellerDisplayName:
       listing.sellerUsername || listing.sellerName || "Local seller",
-    sellerImage: getAssetUrl(listing.sellerImage),
+    sellerImage: toAbsoluteUrl(listing.sellerImage, api.baseUrl),
     sellerImageSource: listing.sellerImage
-      ? { uri: getAssetUrl(listing.sellerImage) }
+      ? { uri: toAbsoluteUrl(listing.sellerImage, api.baseUrl) }
       : null,
   };
 }
@@ -65,13 +35,13 @@ function normalizeListing(listing) {
 function normalizeListingDescription(description) {
   const value = String(description || "").trim();
 
-  return value || fallbackDescription;
+  return value || LISTING_FALLBACKS.description;
 }
 
 function normalizeListingTitle(title) {
   const value = String(title || "").replace(/\s+/g, " ").trim();
 
-  return value || fallbackTitle;
+  return value || LISTING_FALLBACKS.title;
 }
 
 export async function getListings() {
@@ -130,11 +100,11 @@ export async function removeCachedListing(id) {
 }
 
 async function getCachedListings() {
-  return cache.get(listingsCacheKey);
+  return cache.get(CACHE_KEYS.listings);
 }
 
 async function cacheListings(listings) {
-  await cache.store(listingsCacheKey, listings);
+  await cache.store(CACHE_KEYS.listings, listings);
 }
 
 function isOffline(networkState) {
@@ -155,11 +125,10 @@ export function addListing(listing, onUploadProgress) {
   });
 
   listing.images.forEach((uri, index) => {
-    formData.append("images", {
-      uri,
-      name: getFileName(uri, index),
-      type: getMimeType(uri),
-    });
+    formData.append(
+      "images",
+      getUploadFile(uri, `listing-${index + 1}-${UPLOAD_DEFAULTS.listingFileName}`)
+    );
   });
 
   return client.postMultipart(

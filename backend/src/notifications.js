@@ -2,21 +2,32 @@ import { env } from "./config/environment.js";
 
 export async function sendPushNotifications(messages) {
   const pushMessages = messages.filter((message) => isExpoPushToken(message.to));
-  if (!pushMessages.length) return;
+  if (!pushMessages.length || !env.expoPushUrl) return;
 
-  const response = await fetch(env.expoPushUrl, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-Encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(pushMessages),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), env.pushRequestTimeoutMs);
+
+  let response;
+  try {
+    response = await fetch(env.expoPushUrl, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(pushMessages),
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("Expo push notification request failed", response.status, text);
+    throw new Error(
+      `Push notification request failed (${response.status}): ${text}`
+    );
   }
 }
 

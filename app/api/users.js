@@ -1,19 +1,10 @@
 import { saveCurrentUser } from "../auth/session";
 import api from "../config/api";
+import { UPLOAD_DEFAULTS } from "../config/constants";
+import { toAbsoluteUrl } from "../utils/urls";
+import { getUploadFile } from "../utils/uploads";
 import client from "./client";
 import { API_ENDPOINTS } from "./endpoints";
-
-function getFileName(uri) {
-  return uri.split("/").pop() || "profile.jpg";
-}
-
-function getMimeType(uri) {
-  const extension = uri.split(".").pop()?.toLowerCase();
-
-  if (extension === "png") return "image/png";
-  if (extension === "webp") return "image/webp";
-  return "image/jpeg";
-}
 
 export async function getUser(id) {
   const data = await client.get(API_ENDPOINTS.users.byId(id));
@@ -36,11 +27,10 @@ export async function updateProfile({
   });
 
   if (imageUri) {
-    formData.append("image", {
-      uri: imageUri,
-      name: getFileName(imageUri),
-      type: getMimeType(imageUri),
-    });
+    formData.append(
+      "image",
+      getUploadFile(imageUri, UPLOAD_DEFAULTS.profileFileName)
+    );
   }
 
   const data = await client.putMultipart(API_ENDPOINTS.users.profile, formData);
@@ -56,7 +46,7 @@ export async function updateProfile({
 export function normalizeUser(user) {
   if (!user) return null;
 
-  const image = normalizeImageUrl(user.image);
+  const image = toAbsoluteUrl(user.image, api.baseUrl);
 
   return {
     email: user.email || null,
@@ -66,14 +56,4 @@ export function normalizeUser(user) {
     name: user.name || null,
     username: user.username || null,
   };
-}
-
-function normalizeImageUrl(image) {
-  if (!image) return null;
-
-  if (/^https?:\/\//i.test(image)) {
-    return image;
-  }
-
-  return `${api.baseUrl}${image.startsWith("/") ? "" : "/"}${image}`;
 }

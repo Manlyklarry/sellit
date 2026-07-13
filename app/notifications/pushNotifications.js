@@ -4,8 +4,8 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import { registerPushToken, unregisterPushToken } from "../api/notifications";
+import { APP_STORAGE_KEYS } from "../config/constants";
 
-const registeredPushTokenKey = "sellit-expo-push-token";
 const listingsChannelId = "listings";
 const listingsChannelName = "Listings";
 
@@ -41,25 +41,22 @@ export async function registerForPushNotifications(user) {
       token,
       user,
     });
-    await AsyncStorage.setItem(registeredPushTokenKey, token);
+    await AsyncStorage.setItem(APP_STORAGE_KEYS.pushToken, token);
 
     return token;
   } catch (error) {
-    console.log("Push notification registration failed", error.message);
     return null;
   }
 }
 
 export async function unregisterCurrentPushToken() {
   try {
-    const token = await AsyncStorage.getItem(registeredPushTokenKey);
+    const token = await AsyncStorage.getItem(APP_STORAGE_KEYS.pushToken);
     if (!token) return;
 
     await unregisterPushToken(token);
-    await AsyncStorage.removeItem(registeredPushTokenKey);
-  } catch (error) {
-    console.log("Push notification unregister failed", error.message);
-  }
+    await AsyncStorage.removeItem(APP_STORAGE_KEYS.pushToken);
+  } catch {}
 }
 
 async function getNotificationPermission() {

@@ -1,7 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Yup from "yup";
 
 import { getCurrentUser } from "../auth/session";
 import {
@@ -14,78 +13,11 @@ import {
 import LocationPicker from "../components/LocationPicker";
 import ThemeToggle from "../components/ThemeToggle";
 import UploadScreen from "../components/UploadScreen";
-import colors from "../config/colors";
+import { LISTING_CATEGORIES } from "../config/listings";
 import { useAppTheme } from "../config/theme";
 import useListingUpload from "../hooks/useListingUpload";
 import useLocation from "../hooks/useLocation";
-
-const categories = [
-  {
-    label: "Furniture",
-    value: 1,
-    description: "Chairs, tables, sofas, and home pieces",
-    icon: "sofa-single",
-    backgroundColor: colors.primary,
-  },
-  {
-    label: "Electronics",
-    value: 2,
-    description: "Phones, laptops, audio, and accessories",
-    icon: "cellphone",
-    backgroundColor: colors.secondary,
-  },
-  {
-    label: "Clothing",
-    value: 3,
-    description: "Shoes, fabric, shirts, and personal style",
-    icon: "tshirt-crew",
-    backgroundColor: "#8e7dff",
-  },
-  {
-    label: "Food",
-    value: 4,
-    description: "Fresh produce, pantry goods, and local staples",
-    icon: "food-apple",
-    backgroundColor: "#f7b731",
-  },
-  {
-    label: "Sports",
-    value: 5,
-    description: "Bikes, fitness gear, balls, and outdoor items",
-    icon: "basketball",
-    backgroundColor: "#45aaf2",
-  },
-  {
-    label: "Others",
-    value: 6,
-    description: "Anything that does not fit the other categories",
-    icon: "dots-horizontal-circle",
-    backgroundColor: colors.medium,
-  },
-];
-
-const validationSchema = Yup.object().shape({
-  images: Yup.array()
-    .min(1, "Please add at least one photo.")
-    .max(6, "You can add up to 6 photos.")
-    .required("Please add at least one photo."),
-  title: Yup.string()
-    .required("Name of item is required.")
-    .min(3, "Name of item must be at least 3 characters.")
-    .max(80, "Name of item must be 80 characters or less."),
-  price: Yup.number()
-    .transform((value, originalValue) =>
-      originalValue === "" ? undefined : value
-    )
-    .typeError("Price must be a number.")
-    .required("Price is required.")
-    .min(1, "Price must be at least 1."),
-  category: Yup.object().nullable().required("Category is required."),
-  description: Yup.string()
-    .required("Description is required.")
-    .min(10, "Description must be at least 10 characters.")
-    .max(500, "Description must be 500 characters or less."),
-});
+import { listingValidationSchema } from "../validation/listingSchema";
 
 const initialValues = {
   images: [],
@@ -171,7 +103,7 @@ function ListingEditScreen() {
         <AppForm
           initialValues={initialValues}
           onSubmit={handleSubmit}
-          validationSchema={validationSchema}
+        validationSchema={listingValidationSchema}
         >
           {uploadState.error ? (
             <Text style={styles.error}>{uploadState.error}</Text>
@@ -197,7 +129,7 @@ function ListingEditScreen() {
               width={140}
             />
             <AppFormPicker
-              items={categories}
+          items={LISTING_CATEGORIES}
               name="category"
               placeholder="Category"
               title="Select category"

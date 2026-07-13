@@ -10,8 +10,7 @@ import {
 import { useColorScheme } from "react-native";
 
 import { palettes } from "./colors";
-
-const STORAGE_KEY = "sellit.theme";
+import { APP_STORAGE_KEYS } from "./constants";
 
 const ThemeContext = createContext({
   isDark: false,
@@ -28,7 +27,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    AsyncStorage.getItem(STORAGE_KEY)
+    AsyncStorage.getItem(APP_STORAGE_KEYS.theme)
       .then((savedMode) => {
         if (!mounted) return;
         if (savedMode === "light" || savedMode === "dark") {
@@ -46,7 +45,7 @@ export function ThemeProvider({ children }) {
     if (nextMode !== "light" && nextMode !== "dark") return;
 
     setModeState(nextMode);
-    AsyncStorage.setItem(STORAGE_KEY, nextMode).catch(() => {});
+    AsyncStorage.setItem(APP_STORAGE_KEYS.theme, nextMode).catch(() => {});
   }, []);
 
   const toggleTheme = useCallback(() => {

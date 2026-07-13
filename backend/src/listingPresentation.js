@@ -1,6 +1,4 @@
-const fallbackDescription =
-  "A local marketplace item in good condition. Message the seller to confirm availability and pickup details.";
-const fallbackTitle = "Marketplace item";
+import { LISTING_FALLBACKS } from "../../shared/listingValidation.js";
 
 export function formatListing(listing) {
   const images = listing.images.map((image) => ({
@@ -34,11 +32,11 @@ export function formatListing(listing) {
 export function normalizeListingDescription(description) {
   const value = String(description || "").trim();
 
-  return value || fallbackDescription;
+  return value || LISTING_FALLBACKS.description;
 }
 
 export function normalizeListingTitle(title) {
   const value = String(title || "").replace(/\s+/g, " ").trim();
 
-  return value || fallbackTitle;
+  return value || LISTING_FALLBACKS.title;
 }

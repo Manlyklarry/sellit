@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getListings, removeCachedListing } from "../api/listings";
 import { filterListings } from "../utils/listingFilters";
-import { sampleListings } from "../screens/listingsData";
 
 const allCategoriesLabel = "All";
 
 function useListings() {
-  const [listings, setListings] = useState(sampleListings);
+  const [listings, setListings] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,9 +36,7 @@ function useListings() {
     try {
       const result = await getListings();
 
-      if (result.data.length) {
-        setListings(result.data);
-      }
+      setListings(result.data);
 
       setError(result.error?.message || null);
       setUsingCache(result.stale);

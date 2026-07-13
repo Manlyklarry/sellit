@@ -4,6 +4,7 @@ import { after, before, describe, test } from "node:test";
 
 import { createApp } from "../src/app.js";
 import { prisma } from "../src/prisma.js";
+import { API_ENDPOINTS } from "../../shared/apiRoutes.js";
 
 const origin = "http://localhost:8081";
 
@@ -50,7 +51,7 @@ describe("listings API", () => {
   });
 
   test("health reports database connectivity", async () => {
-    const response = await request("/health");
+    const response = await request(API_ENDPOINTS.health);
     const body = await response.json();
 
     assert.equal(response.status, 200);
@@ -59,7 +60,7 @@ describe("listings API", () => {
   });
 
   test("lists and fetches a listing by id", async () => {
-    const listResponse = await request("/api/listings");
+    const listResponse = await request(API_ENDPOINTS.listings.root);
     const listBody = await listResponse.json();
 
     assert.equal(listResponse.status, 200);
@@ -67,7 +68,7 @@ describe("listings API", () => {
       listBody.listings.some((listing) => listing.id === seededListing.id)
     );
 
-    const detailResponse = await request(`/api/listings/${seededListing.id}`);
+    const detailResponse = await request(API_ENDPOINTS.listings.byId(seededListing.id));
     const detailBody = await detailResponse.json();
 
     assert.equal(detailResponse.status, 200);
@@ -76,7 +77,7 @@ describe("listings API", () => {
   });
 
   test("updates profile details and rejects duplicate usernames", async () => {
-    const updateResponse = await request("/api/users/profile", {
+    const updateResponse = await request(API_ENDPOINTS.users.profile, {
       method: "PUT",
       body: createProfileFormData({
         name: "Updated Owner",
@@ -90,7 +91,7 @@ describe("listings API", () => {
     assert.equal(updateBody.user.name, "Updated Owner");
     assert.equal(updateBody.user.username, "updated_owner");
 
-    const duplicateResponse = await request("/api/users/profile", {
+    const duplicateResponse = await request(API_ENDPOINTS.users.profile, {
       method: "PUT",
       body: createProfileFormData({
         name: "Other User",
@@ -105,7 +106,7 @@ describe("listings API", () => {
   });
 
   test("uploads and removes a profile image", async () => {
-    const uploadResponse = await request("/api/users/profile", {
+    const uploadResponse = await request(API_ENDPOINTS.users.profile, {
       method: "PUT",
       body: createProfileFormData({
         image: true,
@@ -119,7 +120,7 @@ describe("listings API", () => {
     assert.equal(uploadResponse.status, 200);
     assert.match(uploadBody.user.image, /^\/uploads\/profiles\/.+\.png$/);
 
-    const removeResponse = await request("/api/users/profile", {
+    const removeResponse = await request(API_ENDPOINTS.users.profile, {
       method: "PUT",
       body: createProfileFormData({
         name: "Updated Owner",
@@ -136,7 +137,7 @@ describe("listings API", () => {
 
   test("includes current seller profile data on listings", async () => {
     const listing = await createListing(owner, "Codex integration seller profile");
-    const response = await request(`/api/listings/${listing.id}`);
+    const response = await request(API_ENDPOINTS.listings.byId(listing.id));
     const body = await response.json();
 
     assert.equal(response.status, 200);
@@ -145,7 +146,7 @@ describe("listings API", () => {
   });
 
   test("rejects listing creation without a signed-in seller snapshot", async () => {
-    const response = await request("/api/listings", {
+    const response = await request(API_ENDPOINTS.listings.root, {
       method: "POST",
       body: createListingFormData({ seller: null }),
     });
@@ -156,7 +157,7 @@ describe("listings API", () => {
   });
 
   test("creates a listing for a signed-in seller", async () => {
-    const response = await request("/api/listings", {
+    const response = await request(API_ENDPOINTS.listings.root, {
       method: "POST",
       body: createListingFormData({
         seller: {
@@ -177,13 +178,13 @@ describe("listings API", () => {
   test("protects listing deletion by owner", async () => {
     const listing = await createListing(owner, "Codex integration protected");
 
-    const anonymousResponse = await request(`/api/listings/${listing.id}`, {
+    const anonymousResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
       json: {},
     });
     assert.equal(anonymousResponse.status, 401);
 
-    const otherUserResponse = await request(`/api/listings/${listing.id}`, {
+    const otherUserResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
       json: {
         user: {
@@ -194,7 +195,7 @@ describe("listings API", () => {
     });
     assert.equal(otherUserResponse.status, 403);
 
-    const ownerResponse = await request(`/api/listings/${listing.id}`, {
+    const ownerResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
       json: {
         user: {

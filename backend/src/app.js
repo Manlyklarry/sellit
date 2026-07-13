@@ -54,12 +54,20 @@ export function createApp() {
   app.use(ROUTES.pushTokens, pushTokensRouter);
   app.use(ROUTES.users, usersRouter);
 
+  app.use((_req, res) => {
+    res.status(404).json({
+      ok: false,
+      error: "Route not found",
+    });
+  });
+
   app.use((error, _req, res, _next) => {
     console.error(error);
 
-    res.status(500).json({
+    const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    res.status(status).json({
       ok: false,
-      error: "Internal server error",
+      error: status < 500 ? error.message : "Internal server error",
     });
   });
 

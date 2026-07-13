@@ -1,44 +1,28 @@
-import fs from "node:fs";
 import path from "node:path";
 
 import express from "express";
-import multer from "multer";
 
+import { env } from "../config/environment.js";
+import { parseJsonField } from "../http/parsers.js";
+import {
+  createImageUpload,
+  deleteUploadedFiles,
+  handleUploadError,
+} from "../http/uploads.js";
 import { prisma } from "../prisma.js";
+import {
+  normalizeDisplayName as normalizeDisplayNameValue,
+  normalizeUsername as normalizeUsernameValue,
+  validateDisplayName,
+  validateUsername,
+} from "../../../shared/profileValidation.js";
 
 const router = express.Router();
-const uploadDirectory = path.join(process.cwd(), "uploads", "profiles");
-
-fs.mkdirSync(uploadDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, callback) => {
-    callback(null, uploadDirectory);
-  },
-  filename: (_req, file, callback) => {
-    const extension = getSafeImageExtension(file);
-    const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
-
-    callback(null, safeName);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 4 * 1024 * 1024,
-    files: 1,
-  },
-  fileFilter: (_req, file, callback) => {
-    if (file.mimetype.startsWith("image/")) {
-      callback(null, true);
-      return;
-    }
-
-    callback(Object.assign(new Error("Only profile image uploads are supported."), {
-      statusCode: 400,
-    }));
-  },
+const upload = createImageUpload({
+  directory: "profiles",
+  fileSize: env.profileImageMaxBytes,
+  files: 1,
+  message: "Only profile image uploads are supported.",
 });
 
 router.get("/:id", async (req, res, next) => {
@@ -148,14 +132,7 @@ router.put("/profile", upload.single("image"), async (req, res, next) => {
   }
 });
 
-router.use((error, _req, res, next) => {
-  if (error instanceof multer.MulterError || error.statusCode === 400) {
-    res.status(400).json({ error: error.message });
-    return;
-  }
-
-  next(error);
-});
+router.use(handleUploadError);
 
 const userSelect = {
   email: true,
@@ -176,64 +153,31 @@ function formatUser(user) {
 }
 
 function normalizeDisplayName(value) {
-  const name = String(value || "").replace(/\s+/g, " ").trim();
-
-  if (name.length < 2) {
-    return { ok: false, error: "Display name must be at least 2 characters." };
-  }
-
-  if (name.length > 80) {
-    return { ok: false, error: "Display name must be 80 characters or less." };
-  }
-
-  return { ok: true, value: name };
+  const error = validateDisplayName(value);
+  return error
+    ? { ok: false, error }
+    : { ok: true, value: normalizeDisplayNameValue(value) };
 }
 
 function normalizeUsername(value) {
-  const username = String(value || "").trim().toLowerCase();
-
+  const username = normalizeUsernameValue(value);
   if (!username) {
     return { ok: true, value: null };
   }
-
-  if (!/^[a-z0-9_]{3,24}$/.test(username)) {
-    return {
-      ok: false,
-      error: "Username must be 3-24 characters using letters, numbers, or underscores.",
-    };
-  }
-
-  return { ok: true, value: username };
-}
-
-function parseJsonField(value) {
-  if (!value || value === "null") return null;
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function getSafeImageExtension(file) {
-  if (file.mimetype === "image/png") return ".png";
-  if (file.mimetype === "image/webp") return ".webp";
-  return ".jpg";
+  const error = validateUsername(value);
+  return error ? { ok: false, error } : { ok: true, value: username };
 }
 
 async function deleteUploadedFile(file) {
-  if (!file) return;
-
-  await fs.promises.unlink(file.path).catch(() => null);
+  await deleteUploadedFiles(file);
 }
 
 async function deleteStoredProfileImage(imagePath) {
   if (!imagePath?.startsWith("/uploads/profiles/")) return;
 
-  await fs.promises
-    .unlink(path.join(process.cwd(), imagePath.replace(/^\//, "")))
-    .catch(() => null);
+  await deleteUploadedFiles({
+    path: path.join(process.cwd(), imagePath.replace(/^\//, "")),
+  });
 }
 
 export default router;

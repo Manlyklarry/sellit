@@ -1,16 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import api from "../config/api";
-
-const currentUserKey = "sellit-current-user";
+import { APP_STORAGE_KEYS } from "../config/constants";
+import { toAbsoluteUrl } from "../utils/urls";
 
 export async function clearCurrentUser() {
-  await AsyncStorage.removeItem(currentUserKey);
+  await AsyncStorage.removeItem(APP_STORAGE_KEYS.currentUser);
 }
 
 export async function getCurrentUser() {
   try {
-    const value = await AsyncStorage.getItem(currentUserKey);
+    const value = await AsyncStorage.getItem(APP_STORAGE_KEYS.currentUser);
     return value ? JSON.parse(value) : null;
   } catch {
     return null;
@@ -28,16 +28,12 @@ export async function saveCurrentUser(user) {
     username: user.username || null,
   };
 
-  await AsyncStorage.setItem(currentUserKey, JSON.stringify(currentUser));
+  await AsyncStorage.setItem(APP_STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
   return currentUser;
 }
 
 function normalizeImageUrl(image) {
   if (!image) return null;
 
-  if (/^https?:\/\//i.test(image)) {
-    return image;
-  }
-
-  return `${api.baseUrl}${image.startsWith("/") ? "" : "/"}${image}`;
+  return toAbsoluteUrl(image, api.baseUrl);
 }

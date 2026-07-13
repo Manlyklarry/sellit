@@ -15,12 +15,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AppActivityIndicator from "../components/AppActivityIndicator";
 import Card from "../components/Card";
 import ThemeToggle from "../components/ThemeToggle";
+import { MARKET_DEFAULTS, UI_TIMINGS } from "../config/constants";
+import { BROWSE_CATEGORIES, DEFAULT_LISTING_IMAGE } from "../config/listings";
 import { useAppTheme } from "../config/theme";
 import useListings from "../hooks/useListings";
 import { FEED_ROUTES } from "../navigation/routes";
 import { getListingCategory } from "../utils/listingFilters";
 import formatCurrency from "../utils/currency";
-import { listingCategories, sampleListings } from "./listingsData";
 
 function ListingsScreen({ navigation, route }) {
   const { theme } = useAppTheme();
@@ -46,7 +47,7 @@ function ListingsScreen({ navigation, route }) {
   useEffect(() => {
     Animated.timing(headerOpacity, {
       toValue: 1,
-      duration: 420,
+      duration: UI_TIMINGS.feedEntranceMs,
       useNativeDriver: true,
     }).start();
   }, [headerOpacity]);
@@ -142,13 +143,13 @@ function ListingsScreen({ navigation, route }) {
                 </View>
                 <View style={styles.statDivider} />
                 <View>
-                  <Text style={styles.statValue}>GHC</Text>
+                  <Text style={styles.statValue}>{MARKET_DEFAULTS.currencyCode}</Text>
                   <Text style={styles.statLabel}>local pricing</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View>
-                  <Text style={styles.statValue}>24h</Text>
-                  <Text style={styles.statLabel}>fresh drops</Text>
+                  <Text style={styles.statValue}>{usingCache ? "Saved" : "Live"}</Text>
+                  <Text style={styles.statLabel}>data source</Text>
                 </View>
               </View>
             </Animated.View>
@@ -159,7 +160,7 @@ function ListingsScreen({ navigation, route }) {
               </Text>
             </View>
             <View style={styles.categoryGrid}>
-              {listingCategories.map((category) => {
+              {BROWSE_CATEGORIES.map((category) => {
                 const selected = selectedCategory === category.label;
 
                 return (
@@ -251,7 +252,7 @@ function ListingsScreen({ navigation, route }) {
           />
         }
         renderItem={({ item }) => {
-          const image = item.image || sampleListings[0].image;
+          const image = item.image || DEFAULT_LISTING_IMAGE;
 
           return (
             <View style={styles.cardContainer}>
@@ -259,7 +260,7 @@ function ListingsScreen({ navigation, route }) {
                 title={item.title}
                 subTitle={formatCurrency(item.price)}
                 image={image}
-                location={item.location?.address || "Accra"}
+                location={item.location?.address || "Location unavailable"}
                 meta={getListingCategory(item)}
                 sellerImage={item.sellerImageSource}
                 sellerName={item.sellerDisplayName}

@@ -1,6 +1,7 @@
 import api from "../config/api";
+import { NETWORK_DEFAULTS } from "../config/constants";
 
-const defaultTimeout = 10000;
+const defaultTimeout = NETWORK_DEFAULTS.requestTimeoutMs;
 
 function createFormData(data) {
   const formData = new FormData();
@@ -127,7 +128,7 @@ function sendMultipart(method, endpoint, formData, onUploadProgress) {
       );
     request.ontimeout = () =>
       reject(new Error(`Upload timed out after ${request.timeout / 1000}s.`));
-    request.timeout = 30000;
+    request.timeout = NETWORK_DEFAULTS.uploadTimeoutMs;
     request.send(formData);
   });
 }

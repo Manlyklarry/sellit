@@ -1,53 +1,20 @@
-import { Image, StyleSheet, Text, View } from "react-native";
-import { useFormikContext } from "formik";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as Yup from "yup";
+import { Alert } from "react-native";
 
 import { signUp } from "../api/auth";
 import { updateProfile } from "../api/users";
 import { getCurrentUser } from "../auth/session";
 import { saveSellingType } from "../auth/onboarding";
+import AuthScreenLayout from "../components/auth/AuthScreenLayout";
 import AppForm from "../components/forms/AppForm";
 import AppFormField from "../components/forms/AppFormField";
-import ErrorMessage from "../components/forms/ErrorMessage";
+import FormStatusError from "../components/forms/FormStatusError";
 import SubmitButton from "../components/forms/SubmitButton";
-import ThemeToggle from "../components/ThemeToggle";
-import { useAppTheme } from "../config/theme";
 import { AUTH_ROUTES, ROOT_ROUTES } from "../navigation/routes";
-
-const validationSchema = Yup.object().shape({
-  name: Yup.string()
-    .required("Name is required.")
-    .min(2, "Name must be at least 2 characters."),
-  username: Yup.string()
-    .trim()
-    .lowercase()
-    .test(
-      "username-format",
-      "Username must be 3-24 characters using letters, numbers, or underscores.",
-      (value) => !value || /^[a-z0-9_]{3,24}$/.test(value)
-    ),
-  email: Yup.string()
-    .required("Email is required.")
-    .email("Enter a valid email address."),
-  password: Yup.string()
-    .required("Password is required.")
-    .min(6, "Password must be at least 6 characters."),
-});
+import { registerValidationSchema } from "../validation/authSchemas";
 
 function RegisterScreen({ navigation, route }) {
-  const { theme } = useAppTheme();
-  const styles = createStyles(theme);
-
   return (
-    <SafeAreaView style={styles.screen} edges={["bottom"]}>
-      <View style={styles.themeRow}>
-        <ThemeToggle compact />
-      </View>
-      <View style={styles.container}>
-        <Image source={require("../assets/logo-red.png")} style={styles.logo} />
-        <Text style={styles.heading}>Create account</Text>
-
+    <AuthScreenLayout title="Create account">
         <AppForm
           initialValues={{ name: "", username: "", email: "", password: "" }}
           onSubmit={async (values, { setStatus }) => {
@@ -55,11 +22,18 @@ function RegisterScreen({ navigation, route }) {
               setStatus(null);
               await signUp(values);
               if (values.username.trim()) {
-                await updateProfile({
-                  name: values.name,
-                  user: await getCurrentUser(),
-                  username: values.username,
-                });
+                try {
+                  await updateProfile({
+                    name: values.name,
+                    user: await getCurrentUser(),
+                    username: values.username,
+                  });
+                } catch (profileError) {
+                  Alert.alert(
+                    "Account created",
+                    `${profileError.message} You can update your profile from the Account tab.`
+                  );
+                }
               }
               if (route.params?.onboarding) {
                 if (route.params.sellingType) {
@@ -75,7 +49,7 @@ function RegisterScreen({ navigation, route }) {
               setStatus(error.message);
             }
           }}
-          validationSchema={validationSchema}
+          validationSchema={registerValidationSchema}
         >
           <AppFormField
             autoCapitalize="words"
@@ -114,45 +88,8 @@ function RegisterScreen({ navigation, route }) {
           <FormStatusError />
           <SubmitButton title="Register" />
         </AppForm>
-      </View>
-    </SafeAreaView>
+    </AuthScreenLayout>
   );
 }
-
-function FormStatusError() {
-  const { status } = useFormikContext();
-
-  return <ErrorMessage error={status} visible={Boolean(status)} />;
-}
-
-const createStyles = (theme) =>
-  StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-  heading: {
-    color: theme.foreground,
-    fontSize: 30,
-    fontWeight: "900",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  logo: {
-    width: 90,
-    height: 90,
-    alignSelf: "center",
-    marginTop: 28,
-    marginBottom: 18,
-  },
-  screen: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-  themeRow: {
-    alignItems: "flex-end",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-});
 
 export default RegisterScreen;
