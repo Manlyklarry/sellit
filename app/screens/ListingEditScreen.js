@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getCurrentUser } from "../auth/session";
 import {
   AppForm,
   AppFormField,
@@ -42,7 +41,6 @@ function ListingEditScreen() {
     useLocation();
 
   const handleSubmit = async (values, { resetForm }) => {
-    const currentUser = await getCurrentUser();
     const locationSnapshot = location ? null : await getLocation();
     const currentLocation = location || locationSnapshot?.location;
     const currentAddress = locationSnapshot?.address || address;
@@ -55,7 +53,6 @@ function ListingEditScreen() {
             longitude: currentLocation.coords.longitude,
           }
         : null,
-      seller: currentUser,
     };
 
     try {
@@ -103,7 +100,7 @@ function ListingEditScreen() {
         <AppForm
           initialValues={initialValues}
           onSubmit={handleSubmit}
-        validationSchema={listingValidationSchema}
+          validationSchema={listingValidationSchema}
         >
           {uploadState.error ? (
             <Text style={styles.error}>{uploadState.error}</Text>
@@ -129,7 +126,7 @@ function ListingEditScreen() {
               width={140}
             />
             <AppFormPicker
-          items={LISTING_CATEGORIES}
+              items={LISTING_CATEGORIES}
               name="category"
               placeholder="Category"
               title="Select category"

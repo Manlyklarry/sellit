@@ -1,4 +1,8 @@
-import { LISTING_FALLBACKS } from "../../shared/listingValidation.js";
+import {
+  getListingDisplayDescription,
+  getListingDisplayTitle,
+} from "../../shared/listingValidation.js";
+import { getCanonicalListingCategoryLabel } from "../../shared/listingCategories.js";
 
 export function formatListing(listing) {
   const images = listing.images.map((image) => ({
@@ -11,15 +15,19 @@ export function formatListing(listing) {
 
   return {
     id: listing.id,
-    title: normalizeListingTitle(listing.title),
+    title: getListingDisplayTitle(listing.title),
     price: listing.price.toString(),
+    currency: listing.currency,
+    status: listing.status,
     categoryId: listing.categoryId,
-    categoryLabel: listing.categoryLabel,
-    description: normalizeListingDescription(listing.description),
+    categoryLabel: getCanonicalListingCategoryLabel(
+      listing.categoryId,
+      listing.categoryLabel
+    ),
+    description: getListingDisplayDescription(listing.description),
     location: listing.location,
-    sellerEmail: listing.seller?.email || listing.sellerEmail,
     sellerImage: listing.seller?.image || null,
-    sellerName: listing.seller?.name || listing.sellerName,
+    sellerName: listing.seller?.name || null,
     sellerUsername: listing.seller?.username || null,
     sellerUserId: listing.sellerUserId,
     createdAt: listing.createdAt,
@@ -27,16 +35,4 @@ export function formatListing(listing) {
     images,
     imageUrl: images[0]?.url || null,
   };
-}
-
-export function normalizeListingDescription(description) {
-  const value = String(description || "").trim();
-
-  return value || LISTING_FALLBACKS.description;
-}
-
-export function normalizeListingTitle(title) {
-  const value = String(title || "").replace(/\s+/g, " ").trim();
-
-  return value || LISTING_FALLBACKS.title;
 }

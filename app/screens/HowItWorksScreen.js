@@ -3,7 +3,9 @@ import { ImageBackground, ScrollView, StyleSheet, Text, View } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAppTheme } from "../config/theme";
+import { MOTION } from "../config/motion";
 import { AUTH_ROUTES } from "../navigation/routes";
+import { OnboardingEntrance } from "./onboarding/OnboardingMotion";
 import { OnboardingHeader, PrimaryAction } from "./onboarding/OnboardingUI";
 
 const steps = [
@@ -24,11 +26,18 @@ function HowItWorksScreen({ navigation }) {
         onSkip={() => navigation.navigate(AUTH_ROUTES.REGISTER, { onboarding: true })}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Three simple steps to sell</Text>
-        <Text style={styles.subtitle}>Turn your items into cash. It’s fast, direct, and easy.</Text>
+        <OnboardingEntrance>
+          <Text style={styles.title}>Three simple steps to sell</Text>
+          <Text style={styles.subtitle}>Turn your items into cash. It’s fast, direct, and easy.</Text>
+        </OnboardingEntrance>
         <View style={styles.steps}>
           {steps.map((step, index) => (
-            <View key={step.title} style={styles.stepRow}>
+            <OnboardingEntrance
+              delay={MOTION.stagger * (index + 1)}
+              key={step.title}
+              style={styles.stepRow}
+              variant={index % 2 === 0 ? "left" : "right"}
+            >
               {index < steps.length - 1 && <View style={styles.connector} />}
               <View style={[styles.stepIcon, index === 1 && styles.stepIconAlt]}>
                 <MaterialCommunityIcons name={step.icon} size={28} color="#ffffff" />
@@ -37,18 +46,20 @@ function HowItWorksScreen({ navigation }) {
                 <Text style={styles.stepTitle}>{step.title}</Text>
                 <Text style={styles.stepText}>{step.text}</Text>
               </View>
-            </View>
+            </OnboardingEntrance>
           ))}
         </View>
-        <ImageBackground source={require("../assets/onboarding/photo-tip.jpg")} style={styles.tip} imageStyle={styles.tipImage}>
-          <View style={styles.tipShade} />
-          <View style={styles.tipCopy}>
-            <Text style={styles.tipLabel}>PRO TIP</Text>
-            <Text style={styles.tipText}>Natural lighting helps buyers see every detail.</Text>
-          </View>
-        </ImageBackground>
-        <View style={styles.dots}><View style={styles.dotActive} /><View style={styles.dot} /><View style={styles.dot} /></View>
-        <PrimaryAction label="Continue" onPress={() => navigation.navigate(AUTH_ROUTES.SELLING_TYPE)} />
+        <OnboardingEntrance delay={MOTION.stagger * 4}>
+          <ImageBackground source={require("../assets/onboarding/photo-tip.jpg")} style={styles.tip} imageStyle={styles.tipImage}>
+            <View style={styles.tipShade} />
+            <View style={styles.tipCopy}>
+              <Text style={styles.tipLabel}>PRO TIP</Text>
+              <Text style={styles.tipText}>Natural lighting helps buyers see every detail.</Text>
+            </View>
+          </ImageBackground>
+          <View style={styles.dots}><View style={styles.dotActive} /><View style={styles.dot} /><View style={styles.dot} /></View>
+          <PrimaryAction label="Continue" onPress={() => navigation.navigate(AUTH_ROUTES.SELLING_TYPE)} />
+        </OnboardingEntrance>
       </ScrollView>
     </SafeAreaView>
   );

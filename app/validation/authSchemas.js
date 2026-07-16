@@ -5,7 +5,7 @@ import {
   validateUsername,
 } from "../../shared/profileValidation";
 
-const PASSWORD_MIN_LENGTH = 6;
+const PASSWORD_MIN_LENGTH = 8;
 
 const email = Yup.string()
   .required("Email is required.")

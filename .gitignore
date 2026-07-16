@@ -37,6 +37,7 @@ backend/.env
 backend/.postgres-data/
 backend/.postgres.log
 backend/uploads/
+backend/src/generated/
 
 # typescript
 *.tsbuildinfo

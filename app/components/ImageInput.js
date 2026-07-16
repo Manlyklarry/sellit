@@ -74,7 +74,7 @@ function ImageInput({ imageUri, onChangeImage }) {
   const setSelectedImage = (result) => {
     if (result.canceled) return;
 
-    onChangeImage(result.assets[0].uri);
+    onChangeImage(result.assets[0]);
   };
 
   return (
@@ -89,7 +89,7 @@ function ImageInput({ imageUri, onChangeImage }) {
     >
       {imageUri ? (
         <>
-          <Image source={{ uri: imageUri }} style={styles.image} />
+          <Image source={{ uri: getImageUri(imageUri) }} style={styles.image} />
           <View style={styles.deleteBadge}>
             <MaterialCommunityIcons
               name="close"
@@ -107,6 +107,10 @@ function ImageInput({ imageUri, onChangeImage }) {
       )}
     </Pressable>
   );
+}
+
+function getImageUri(value) {
+  return typeof value === "string" ? value : value?.uri;
 }
 
 const createStyles = (theme) =>

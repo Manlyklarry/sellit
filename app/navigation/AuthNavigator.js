@@ -10,6 +10,7 @@ import {
   SellingTypeScreen,
   WelcomeScreen,
 } from "../screens";
+import LiquidGlassView from "../components/LiquidGlassView";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,7 +22,14 @@ function AuthNavigator() {
       screenOptions={{
         animation: "slide_from_right",
         contentStyle: { backgroundColor: theme.background },
-        headerStyle: { backgroundColor: theme.background },
+        headerBackground: () => (
+          <LiquidGlassView
+            fallbackColor={theme.background}
+            style={{ flex: 1 }}
+            tintColor={theme.background}
+          />
+        ),
+        headerStyle: { backgroundColor: "transparent" },
         headerShadowVisible: false,
         headerTintColor: theme.foreground,
         headerTitleStyle: {

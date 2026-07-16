@@ -7,18 +7,19 @@ export async function notifyUsersAboutNewListing(listing) {
       where: getNewListingRecipientFilter(listing),
     });
 
-    await sendPushNotifications(
+    const result = await sendPushNotifications(
       tokens.map((token) => ({
         to: token.token,
         sound: "default",
         title: "New item listed",
-        body: `${listing.sellerName || "Someone"} listed ${listing.title}.`,
+        body: `${listing.sellerName || "A seller"} listed ${listing.title}.`,
         data: {
           listingId: listing.id,
           type: "new-listing",
         },
       }))
     );
+    await removeInvalidPushTokens(result.invalidTokens);
   } catch (error) {
     console.error("Failed to send new listing notifications", error);
   }
@@ -33,7 +34,7 @@ export async function notifySellerAboutInquiry({ buyer, inquiry, listing }) {
       where: recipientFilter,
     });
 
-    await sendPushNotifications(
+    const result = await sendPushNotifications(
       tokens.map((token) => ({
         to: token.token,
         sound: "default",
@@ -48,25 +49,21 @@ export async function notifySellerAboutInquiry({ buyer, inquiry, listing }) {
         },
       }))
     );
+    await removeInvalidPushTokens(result.invalidTokens);
   } catch (error) {
     console.error("Failed to send inquiry notification", error);
   }
 }
 
 function getNewListingRecipientFilter(listing) {
-  const excludedSellers = [
-    listing.sellerUserId ? { userId: listing.sellerUserId } : null,
-    listing.sellerEmail ? { userEmail: listing.sellerEmail } : null,
-  ].filter(Boolean);
-
-  return excludedSellers.length ? { NOT: excludedSellers } : undefined;
+  return listing.sellerUserId ? { NOT: { userId: listing.sellerUserId } } : undefined;
 }
 
 function getSellerRecipientFilter(listing) {
-  const recipients = [
-    listing.sellerUserId ? { userId: listing.sellerUserId } : null,
-    listing.sellerEmail ? { userEmail: listing.sellerEmail } : null,
-  ].filter(Boolean);
+  return listing.sellerUserId ? { userId: listing.sellerUserId } : null;
+}
 
-  return recipients.length ? { OR: recipients } : null;
+async function removeInvalidPushTokens(tokens) {
+  if (!tokens.length) return;
+  await prisma.pushToken.deleteMany({ where: { token: { in: tokens } } });
 }

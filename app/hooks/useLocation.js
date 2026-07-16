@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Location from "expo-location";
-import { LOCATION_DEFAULTS } from "../config/constants";
 
 export function formatAddress(addressResult) {
   if (!addressResult) return "";
@@ -19,14 +18,15 @@ export function formatAddress(addressResult) {
 
 function useLocation() {
   const isMounted = useRef(true);
-  const locationSubscription = useRef(null);
+  const requestId = useRef(0);
   const [address, setAddress] = useState("");
   const [geocoding, setGeocoding] = useState(false);
   const [location, setLocation] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const reverseGeocode = useCallback(async ({ latitude, longitude }) => {
+    const currentRequest = ++requestId.current;
     if (isMounted.current) setGeocoding(true);
 
     try {
@@ -35,13 +35,17 @@ function useLocation() {
         longitude,
       });
       const locationAddress = formatAddress(results[0]);
-      if (isMounted.current) setAddress(locationAddress);
+      if (isMounted.current && currentRequest === requestId.current) {
+        setAddress(locationAddress);
+      }
       return locationAddress;
     } catch {
-      if (isMounted.current) setAddress("");
+      if (isMounted.current && currentRequest === requestId.current) setAddress("");
       return "";
     } finally {
-      if (isMounted.current) setGeocoding(false);
+      if (isMounted.current && currentRequest === requestId.current) {
+        setGeocoding(false);
+      }
     }
   }, []);
 
@@ -64,7 +68,7 @@ function useLocation() {
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Balanced,
       });
       if (isMounted.current) setLocation(currentLocation);
       const locationAddress = await reverseGeocode(currentLocation.coords);
@@ -82,32 +86,13 @@ function useLocation() {
   }, [reverseGeocode]);
 
   useEffect(() => {
-    const startLocationUpdates = async () => {
-      const snapshot = await getLocation();
-      if (!snapshot?.location || locationSubscription.current) return;
-
-      locationSubscription.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: LOCATION_DEFAULTS.distanceIntervalMeters,
-          timeInterval: LOCATION_DEFAULTS.updateIntervalMs,
-        },
-        (updatedLocation) => {
-          if (!isMounted.current) return;
-
-          setLocation(updatedLocation);
-          reverseGeocode(updatedLocation.coords);
-        }
-      );
-    };
-
-    startLocationUpdates();
+    isMounted.current = true;
 
     return () => {
       isMounted.current = false;
-      locationSubscription.current?.remove();
+      requestId.current += 1;
     };
-  }, [getLocation]);
+  }, []);
 
   return { address, error, geocoding, getLocation, loading, location };
 }

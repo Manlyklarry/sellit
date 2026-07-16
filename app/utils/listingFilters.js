@@ -1,6 +1,7 @@
-const categoryAliases = {
-  Clothing: "Style",
-};
+import {
+  ALL_LISTINGS_CATEGORY,
+  getCanonicalListingCategoryLabel,
+} from "../../shared/listingCategories";
 
 export function filterListings(listings, { query, selectedCategory }) {
   return listings.filter(
@@ -11,10 +12,10 @@ export function filterListings(listings, { query, selectedCategory }) {
 }
 
 export function getListingCategory(listing) {
-  const category =
-    listing.category?.label || listing.categoryLabel || listing.categoryName;
-
-  return categoryAliases[category] || category || "Marketplace";
+  return getCanonicalListingCategoryLabel(
+    listing.category?.value ?? listing.categoryId,
+    listing.category?.label || listing.categoryLabel || listing.categoryName
+  );
 }
 
 function matchesSearch(listing, query) {
@@ -25,7 +26,7 @@ function matchesSearch(listing, query) {
 }
 
 function matchesCategory(listing, selectedCategory) {
-  if (selectedCategory === "All") return true;
+  if (selectedCategory === ALL_LISTINGS_CATEGORY) return true;
 
   return getListingCategory(listing) === selectedCategory;
 }

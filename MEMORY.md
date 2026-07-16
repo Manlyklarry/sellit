@@ -2,7 +2,7 @@
 
 ## Stack
 
-- Expo SDK 54 (`expo` `~54.0.34`)
+- Expo SDK 54 (`expo` `~54.0.36`)
 - React 19.1 and React Native 0.81.5
 - Expo SDK 54 docs were checked at
   `https://docs.expo.dev/versions/v54.0.0/`; Expo 54 targets React Native
@@ -26,9 +26,9 @@
 - Shared currency formatting lives in `app/utils/currency.js`.
 - Barrel exports exist at `app/screens/index.js`, `app/components/index.js`,
   and `app/components/forms/index.js` to help VS Code suggest component imports.
-- `App.js` wraps the app in `GestureHandlerRootView` and `SafeAreaProvider`.
-  It currently renders `ListingEditScreen` while listing creation is being
-  built out.
+- `App.js` wraps the app in `GestureHandlerRootView`, `ThemeProvider`, and
+  `SafeAreaProvider`; `RootNavigator` selects the authenticated or anonymous
+  flow after verifying the Better Auth server session.
 - `WelcomeScreen` lives at `app/screens/WelcomeScreen.js`.
 - `ViewImageScreen` lives at `app/screens/ViewImageScreen.js`.
 - `ListingEditScreen` is the add-new-listing form screen.
@@ -99,16 +99,155 @@
 - Listing details can delete backend-backed listings. The mobile app calls
   `DELETE /api/listings/:id`, prunes the deleted item from the cached feed, and
   returns to `ListingsScreen` with the item removed from local state.
-- Push notifications use `expo-notifications`. On login/register the app stores
-  the current user locally, requests notification permission, gets an Expo push
-  token, and registers it with `POST /api/push-tokens`. On logout the last
-  registered token is removed from the backend. Expo SDK 54 remote push
+- Push notifications use `expo-notifications`. Notification permission is an
+  explicit opt-in from the Account screen; the token is registered with
+  `POST /api/push-tokens` and removed on logout or opt-out. Expo SDK 54 remote push
   notifications require a development or release build for full device testing;
   Expo Go is not enough for Android remote push behavior.
-- New listing submissions include seller metadata. The backend stores nullable
-  seller fields on listings, notifies other registered push tokens when a new
-  item is listed, and supports `POST /api/listings/:id/inquiries` so buyers can
-  ask about an item and notify the seller.
+- New listing submissions derive ownership exclusively from the Better Auth
+  session. Public listing/user responses never expose email addresses. The
+  backend notifies opted-in devices and supports authenticated, bounded,
+  duplicate-protected inquiries.
+
+## July 2026 Stabilization Baseline
+
+- Public identity and ownership use user IDs, display names, and usernames;
+  seller/buyer emails are not copied into marketplace records or public JSON.
+- Protected listing, profile, inquiry, and push-token operations derive the
+  requester from the Better Auth cookie. Client-supplied user objects are never
+  authorization evidence.
+- The app verifies the Better Auth session during startup. Any API `401` clears
+  cached identity and returns navigation to the anonymous flow.
+- Password minimum length is eight on both client and server.
+- Production CORS accepts configured origins only. Private-LAN Expo origins are
+  development-only.
+- Helmet security headers, bounded JSON bodies, request IDs, API/auth/upload/
+  inquiry rate limits, strict text/location/price validation, self-inquiry
+  protection, and a one-minute duplicate-inquiry cooldown are enabled.
+- Image uploads accept JPEG, PNG, or WebP only and verify file signatures after
+  upload. The client preserves ImagePicker filename/MIME metadata for listing
+  images. Local disk remains a development storage strategy only.
+- Listings have currency and lifecycle status, cursor pagination, useful
+  database indexes, server-side search/category filters, and a versioned
+  15-minute offline cache. Location is collected on explicit request using
+  balanced accuracy instead of continuous tracking.
+- EAS profiles use the SDK 54 build images. On iOS, `sdk-54` currently maps to
+  Xcode 26 and is required to compile the native Liquid Glass path. Development,
+  simulator, preview, and production profiles live in `eas.json`.
+- CI installs clean dependencies, deploys migrations to PostgreSQL, runs lint,
+  backend integration tests, Expo Doctor, and exports all platform bundles.
+- The canonical Prisma client is generated into `backend/node_modules`; the old
+  duplicate checked-in generated TypeScript client was removed.
+
+## Production Launch Gates
+
+These items intentionally require production accounts, infrastructure, policy
+decisions, or real devices. Do not mark the app production-ready until every
+applicable item is completed and verified.
+
+### Next session reminder — July 17, 2026
+
+- When this project is resumed with `codex resume --last`, remind the user
+  immediately that the next task is to continue live push-notification testing
+  on two real devices.
+- Do not mark push notifications verified based only on simulators, Expo Go,
+  API responses, or successful token registration. Use development or preview
+  builds installed on both physical devices.
+- On device A, sign in as seller A and enable notifications from Account. On
+  device B, sign in as buyer B and enable notifications. Confirm each token is
+  registered to the correct authenticated user.
+- Create a listing on device A and confirm device B receives the new-listing
+  notification while device A does not receive its own listing notification.
+- Open the listing on device B, send an inquiry, and confirm device A receives
+  the inquiry notification. Confirm self-inquiries and immediate duplicate
+  inquiries remain blocked.
+- Test foreground, background, and terminated-app delivery; notification tap
+  behavior; opt-out and re-enable; logout token removal; app relaunch; and a
+  denied notification permission on at least one device.
+- Record device models, OS versions, build profile/build ID, user accounts used,
+  timestamps, observed Expo ticket/receipt errors, and pass/fail results here.
+- If delivery fails, check the real EAS project ID, physical-device support,
+  Apple/Google push credentials, production API URL reachability, stored push
+  token ownership, backend logs/request IDs, Expo push tickets, and receipts.
+
+### Known limitations still open
+
+- The real EAS project ID and environment-specific API URLs are not configured
+  in the repository. Push registration intentionally reports an error until a
+  valid project ID is supplied.
+- Signed App Store and Play Store EAS builds and submissions have not yet been
+  completed. Store credentials, listings, privacy disclosures, screenshots,
+  support URLs, content ratings, and review notes remain required.
+- Native Liquid Glass still needs visual and interaction testing on a physical
+  iOS 26+ device. Older iOS and Android fallback behavior also needs real-device
+  verification.
+- Click-level web browser automation was unavailable during the latest test
+  pass. The web entry, JavaScript bundle, lint, and production export passed,
+  but interactive browser flows still need end-to-end coverage.
+- Moderate dependency advisories remain in Expo and Prisma development/build
+  tooling. Their current automated fixes require breaking Expo/Prisma version
+  changes; do not run `npm audit fix --force`.
+- Durable object storage/CDN image processing, shared distributed rate-limit
+  storage, a background job queue, complete Expo push-receipt polling, email
+  verification/password reset/account deletion, monitoring, structured log
+  shipping, backups/restore drills, moderation, and expanded mobile end-to-end
+  tests remain production launch gates.
+
+### Identity, EAS, and stores
+
+- Confirm `com.manlyklarry.sellit` is the permanent iOS bundle identifier and
+  Android application ID before the first store record is created. Changing it
+  later creates a different app.
+- Run `eas init` for the correct Expo organization and configure the resulting
+  real project ID as `EXPO_PUBLIC_EAS_PROJECT_ID` in every EAS environment.
+- Configure development, preview, and production `EXPO_PUBLIC_API_URL` values;
+  production must use a public HTTPS URL. Never ship a localhost/private-LAN URL.
+- Create Apple/Google signing credentials, App Store Connect and Play Console
+  records, privacy disclosures, support URLs, screenshots, content ratings,
+  and review notes. Configure EAS Submit only after ownership is confirmed.
+- Verify production builds on an iOS 26+ physical device for Liquid Glass and
+  on older iOS/Android devices for fallbacks. Also test notification tap flows,
+  cookie persistence across relaunch, camera/gallery uploads, location denial,
+  offline cache, and slow/interrupted networks.
+
+### Backend and data
+
+- Move listing/profile files from local disk to durable object storage such as
+  S3 or R2, serve resized thumbnails through a CDN, strip metadata, decode/
+  re-encode images, limit dimensions/pixels, and run orphan cleanup. Database
+  rows and object operations need a compensating transaction/job strategy.
+- Replace in-process rate-limit storage with a shared Redis-compatible store
+  before running multiple API instances. Configure `TRUST_PROXY` to the exact
+  number of trusted proxy hops—never blindly trust all proxies.
+- Configure strong unique `BETTER_AUTH_SECRET`, canonical HTTPS
+  `BETTER_AUTH_URL`, exact `CORS_ORIGIN`, `DATABASE_URL`, push URL/timeouts, and
+  `MARKET_CURRENCY_CODE` through the production secret manager. Rotate secrets
+  and document the procedure.
+- Add email verification, password reset, account deletion/export, session and
+  device management, retention/anonymization rules, Terms, and Privacy Policy.
+- Add listing edit/sold/archive UI, seller listings, saved listings, reporting,
+  blocking, moderation/admin tools, bans, audit events, and abuse escalation.
+- Replace synchronous push fan-out with a durable job queue. Add category/
+  location notification preferences and poll Expo push receipts so stale tokens
+  are removed after delivery failures, not only immediate ticket failures.
+- Add production database connection-pool sizing, graceful shutdown, separate
+  liveness/readiness probes, automated encrypted backups, point-in-time recovery
+  where available, and regular restore drills.
+
+### Observability and quality
+
+- Configure structured log shipping and error monitoring (for example Sentry)
+  for both mobile and backend, with release/environment tags and privacy-safe
+  event payloads. Add latency, error-rate, queue, notification, storage, and DB
+  dashboards plus alerts.
+- Add React Native component/hook tests, accessibility checks, end-to-end flows
+  on preview builds, visual regression coverage for the glass/fallback UI, and
+  API contract tests. The backend integration suite is necessary but not enough.
+- Gradually move shared contracts and application code to TypeScript and add a
+  generated/validated API schema before the number of endpoints grows.
+- Review dependency audits on every update. Do not use `npm audit fix --force`
+  when it proposes breaking Expo or Prisma changes; upgrade those toolchains in
+  planned, tested SDK/database batches.
 
 ## Assets and Sample Data
 

@@ -3,13 +3,15 @@ import path from "node:path";
 import express from "express";
 
 import { env } from "../config/environment.js";
-import { parseJsonField } from "../http/parsers.js";
+import { requireAuthentication } from "../http/authentication.js";
 import {
   createImageUpload,
+  assertUploadedImages,
   deleteUploadedFiles,
   handleUploadError,
 } from "../http/uploads.js";
 import { prisma } from "../prisma.js";
+import { uploadRateLimit } from "../http/security.js";
 import {
   normalizeDisplayName as normalizeDisplayNameValue,
   normalizeUsername as normalizeUsernameValue,
@@ -31,33 +33,30 @@ router.get("/:id", async (req, res, next) => {
       where: {
         id: req.params.id,
       },
-      select: userSelect,
+      select: publicUserSelect,
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
 
-    res.json({ user: formatUser(user) });
+    res.json({ user: formatPublicUser(user) });
   } catch (error) {
     next(error);
   }
 });
 
-router.put("/profile", upload.single("image"), async (req, res, next) => {
+router.put(
+  "/profile",
+  requireAuthentication,
+  uploadRateLimit,
+  upload.single("image"),
+  async (req, res, next) => {
   try {
-    const requester = parseJsonField(req.body.user);
-    const userId = typeof requester?.id === "string" ? requester.id : null;
-    const email = typeof requester?.email === "string" ? requester.email : null;
-
-    if (!userId && !email) {
-      await deleteUploadedFile(req.file);
-      return res.status(401).json({ error: "Sign in before updating your profile." });
-    }
-
-    const existingUser = await prisma.user.findFirst({
+    await assertUploadedImages(req.file);
+    const existingUser = await prisma.user.findUnique({
       where: {
-        OR: [userId ? { id: userId } : null, email ? { email } : null].filter(Boolean),
+        id: req.authUser.id,
       },
       select: {
         ...userSelect,
@@ -130,7 +129,8 @@ router.put("/profile", upload.single("image"), async (req, res, next) => {
     await deleteUploadedFile(req.file);
     next(error);
   }
-});
+  }
+);
 
 router.use(handleUploadError);
 
@@ -142,9 +142,25 @@ const userSelect = {
   username: true,
 };
 
+const publicUserSelect = {
+  id: true,
+  image: true,
+  name: true,
+  username: true,
+};
+
 function formatUser(user) {
   return {
     email: user.email,
+    id: user.id,
+    image: user.image || null,
+    name: user.name,
+    username: user.username || null,
+  };
+}
+
+function formatPublicUser(user) {
+  return {
     id: user.id,
     image: user.image || null,
     name: user.name,

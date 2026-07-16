@@ -70,7 +70,7 @@ function ListingDetailsScreen({ navigation, route }) {
     setIsDeleting(true);
 
     try {
-      await deleteListing(listing.id, currentUser);
+      await deleteListing(listing.id);
       navigation.navigate(FEED_ROUTES.LISTINGS, {
         deletedListingId: listing.id,
       });
@@ -110,7 +110,6 @@ function ListingDetailsScreen({ navigation, route }) {
       await sendListingInquiry({
         listingId: listing.id,
         message: `Hi, is "${listing.title}" still available?`,
-        user: currentUser,
       });
 
       Alert.alert("Sent", "The seller has been notified.");
@@ -131,7 +130,9 @@ function ListingDetailsScreen({ navigation, route }) {
         <Image source={listing.image} style={styles.image} />
         <View style={styles.imageOverlay} />
         <View style={styles.pricePill}>
-          <Text style={styles.price}>{formatCurrency(listing.price)}</Text>
+          <Text style={styles.price}>
+            {formatCurrency(listing.price, listing.currency)}
+          </Text>
         </View>
       </View>
 
@@ -209,10 +210,7 @@ function ListingDetailsScreen({ navigation, route }) {
 function isCurrentUsersListing(user, listing) {
   if (!user) return false;
 
-  return Boolean(
-    (listing.sellerUserId && listing.sellerUserId === user.id) ||
-      (listing.sellerEmail && listing.sellerEmail === user.email)
-  );
+  return Boolean(listing.sellerUserId && listing.sellerUserId === user.id);
 }
 
 const createStyles = (theme) =>

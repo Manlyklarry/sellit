@@ -22,6 +22,7 @@ import useListings from "../hooks/useListings";
 import { FEED_ROUTES } from "../navigation/routes";
 import { getListingCategory } from "../utils/listingFilters";
 import formatCurrency from "../utils/currency";
+import { ALL_LISTINGS_CATEGORY } from "../../shared/listingCategories";
 
 function ListingsScreen({ navigation, route }) {
   const { theme } = useAppTheme();
@@ -32,9 +33,12 @@ function ListingsScreen({ navigation, route }) {
     error,
     filteredListings,
     hasActiveFilters,
+    hasMore,
     isLoading,
+    isLoadingMore,
     listings,
     loadListings,
+    loadMore,
     refreshing,
     removeListing,
     searchQuery,
@@ -156,7 +160,9 @@ function ListingsScreen({ navigation, route }) {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Browse categories</Text>
               <Text style={styles.sectionAction}>
-                {selectedCategory === "All" ? "Nearby" : selectedCategory}
+                {selectedCategory === ALL_LISTINGS_CATEGORY
+                  ? "Nearby"
+                  : selectedCategory}
               </Text>
             </View>
             <View style={styles.categoryGrid}>
@@ -211,7 +217,7 @@ function ListingsScreen({ navigation, route }) {
             {usingCache ? (
               <View style={styles.notice}>
                 <Text style={styles.noticeText}>
-                  You're offline. Showing the latest saved listings.
+                  You&apos;re offline. Showing the latest saved listings.
                 </Text>
               </View>
             ) : null}
@@ -242,6 +248,13 @@ function ListingsScreen({ navigation, route }) {
             </View>
           ) : null
         }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <AppActivityIndicator compact message="Loading more listings..." />
+          ) : null
+        }
+        onEndReached={hasMore && !usingCache ? loadMore : undefined}
+        onEndReachedThreshold={0.4}
         refreshControl={
           <RefreshControl
             refreshing={false}
@@ -258,7 +271,7 @@ function ListingsScreen({ navigation, route }) {
             <View style={styles.cardContainer}>
               <Card
                 title={item.title}
-                subTitle={formatCurrency(item.price)}
+                subTitle={formatCurrency(item.price, item.currency)}
                 image={image}
                 location={item.location?.address || "Location unavailable"}
                 meta={getListingCategory(item)}

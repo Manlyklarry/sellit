@@ -26,6 +26,11 @@ import {
   validateDisplayName,
   validateUsername,
 } from "../../shared/profileValidation";
+import {
+  hasRegisteredPushToken,
+  registerForPushNotifications,
+  unregisterCurrentPushToken,
+} from "../notifications/pushNotifications";
 
 const profileImageOptions = {
   allowsEditing: true,
@@ -45,6 +50,8 @@ function AccountScreen({ navigation }) {
   const [profileSaving, setProfileSaving] = useState(false);
   const [removeImage, setRemoveImage] = useState(false);
   const [username, setUsername] = useState("");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsSaving, setNotificationsSaving] = useState(false);
   const displayName = getDisplayName(currentUser);
   const profileImageSource = getProfileImageSource({
     currentUser,
@@ -58,6 +65,18 @@ function AccountScreen({ navigation }) {
     setDraftImageUri(null);
     setRemoveImage(false);
   }, [currentUser?.id, currentUser?.name, currentUser?.username]);
+
+  useEffect(() => {
+    let active = true;
+    hasRegisteredPushToken()
+      .then((enabled) => {
+        if (active) setNotificationsEnabled(enabled);
+      })
+      .catch(() => null);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const chooseProfileImage = () => {
     Alert.alert("Profile photo", "Choose a profile image.", [
@@ -92,7 +111,7 @@ function AccountScreen({ navigation }) {
 
   const applySelectedImage = (result) => {
     if (result.canceled) return;
-    setDraftImageUri(result.assets[0].uri);
+    setDraftImageUri(result.assets[0]);
     setRemoveImage(false);
     setProfileSaved(false);
   };
@@ -127,7 +146,6 @@ function AccountScreen({ navigation }) {
         imageUri: draftImageUri,
         name: normalizedName,
         removeImage,
-        user: currentUser,
         username: normalizedUser,
       });
       setName(updatedUser?.name || normalizedName);
@@ -149,6 +167,27 @@ function AccountScreen({ navigation }) {
       index: 0,
       routes: [{ name: ROOT_ROUTES.AUTH }],
     });
+  };
+
+  const handleNotifications = async () => {
+    setNotificationsSaving(true);
+    try {
+      if (notificationsEnabled) {
+        await unregisterCurrentPushToken();
+        setNotificationsEnabled(false);
+      } else {
+        const token = await registerForPushNotifications();
+        if (!token) {
+          Alert.alert("Notifications disabled", "Permission was not granted in system settings.");
+          return;
+        }
+        setNotificationsEnabled(true);
+      }
+    } catch (error) {
+      Alert.alert("Notification settings", error.message);
+    } finally {
+      setNotificationsSaving(false);
+    }
   };
 
   const shortcuts = [
@@ -265,6 +304,24 @@ function AccountScreen({ navigation }) {
           ))}
         </View>
 
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Notifications</Text>
+          <Text style={styles.panelDescription}>
+            Choose whether this device receives marketplace and inquiry alerts.
+          </Text>
+          <AppButton
+            disabled={notificationsSaving}
+            onPress={handleNotifications}
+            title={
+              notificationsSaving
+                ? "Saving..."
+                : notificationsEnabled
+                  ? "Disable notifications"
+                  : "Enable notifications"
+            }
+          />
+        </View>
+
         <Pressable
           accessibilityRole="button"
           onPress={handleLogout}
@@ -283,7 +340,12 @@ function getDisplayName(user) {
 }
 
 function getProfileImageSource({ currentUser, draftImageUri, removeImage }) {
-  if (draftImageUri) return { uri: draftImageUri };
+  if (draftImageUri) {
+    return {
+      uri:
+        typeof draftImageUri === "string" ? draftImageUri : draftImageUri.uri,
+    };
+  }
   if (removeImage) return null;
   return currentUser?.image ? { uri: currentUser.image } : null;
 }

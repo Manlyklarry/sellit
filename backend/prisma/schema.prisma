@@ -20,6 +20,7 @@ model User {
   accounts      Account[]
   listings      Listing[]
   pushTokens    PushToken[]
+  inquiries     ListingInquiry[] @relation("BuyerInquiries")
 
   @@unique([email])
   @@map("user")
@@ -77,13 +78,13 @@ model Listing {
   id            String         @id @default(cuid())
   title         String
   price         Decimal        @db.Decimal(10, 2)
+  currency      String         @default("GHS") @db.VarChar(3)
+  status        ListingStatus  @default(ACTIVE)
   categoryId    Int
   categoryLabel String
   description   String
   location      Json?
   sellerUserId  String?        @map("seller_user_id")
-  sellerName    String?        @map("seller_name")
-  sellerEmail   String?        @map("seller_email")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   images        ListingImage[]
@@ -91,6 +92,9 @@ model Listing {
   seller        User?          @relation(fields: [sellerUserId], references: [id], onDelete: SetNull)
 
   @@index([sellerUserId])
+  @@index([createdAt])
+  @@index([categoryId, createdAt])
+  @@index([status, createdAt])
   @@map("listing")
 }
 
@@ -112,15 +116,12 @@ model PushToken {
   id        String   @id @default(cuid())
   token     String   @unique
   userId    String?  @map("user_id")
-  userName  String?  @map("user_name")
-  userEmail String?  @map("user_email")
   platform  String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([userEmail])
   @@map("push_token")
 }
 
@@ -128,13 +129,18 @@ model ListingInquiry {
   id         String   @id @default(cuid())
   listingId  String   @map("listing_id")
   buyerId    String?  @map("buyer_id")
-  buyerName  String?  @map("buyer_name")
-  buyerEmail String?  @map("buyer_email")
   message    String
   createdAt  DateTime @default(now()) @map("created_at")
   listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer      User?    @relation("BuyerInquiries", fields: [buyerId], references: [id], onDelete: SetNull)
 
   @@index([listingId])
-  @@index([buyerEmail])
+  @@index([buyerId, createdAt])
   @@map("listing_inquiry")
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  ARCHIVED
 }

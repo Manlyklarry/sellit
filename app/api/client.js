@@ -1,5 +1,7 @@
 import api from "../config/api";
 import { NETWORK_DEFAULTS } from "../config/constants";
+import { clearCurrentUser } from "../auth/session";
+import { publishAuthenticationState } from "../auth/authEvents";
 
 const defaultTimeout = NETWORK_DEFAULTS.requestTimeoutMs;
 
@@ -57,8 +59,15 @@ async function request(
     const data = parseJson(text);
 
     if (!response.ok) {
-      throw new Error(
-        data?.error || data?.message || `Request failed with status ${response.status}.`
+      if (response.status === 401) {
+        await clearCurrentUser();
+        publishAuthenticationState(null);
+      }
+
+      throw new ApiError(
+        data?.error || data?.message || `Request failed with status ${response.status}.`,
+        response.status,
+        data
       );
     }
 
@@ -76,21 +85,33 @@ async function request(
   }
 }
 
-function postMultipart(endpoint, formData, onUploadProgress) {
-  return sendMultipart("POST", endpoint, formData, onUploadProgress);
+function postMultipart(endpoint, formData, onUploadProgress, options) {
+  return sendMultipart("POST", endpoint, formData, onUploadProgress, options);
 }
 
-function putMultipart(endpoint, formData, onUploadProgress) {
-  return sendMultipart("PUT", endpoint, formData, onUploadProgress);
+function putMultipart(endpoint, formData, onUploadProgress, options) {
+  return sendMultipart("PUT", endpoint, formData, onUploadProgress, options);
 }
 
-function sendMultipart(method, endpoint, formData, onUploadProgress) {
+function sendMultipart(
+  method,
+  endpoint,
+  formData,
+  onUploadProgress,
+  { signal } = {}
+) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
 
     request.open(method, `${api.baseUrl}${endpoint}`);
     request.setRequestHeader("Origin", api.origin);
     request.withCredentials = true;
+
+    if (signal?.aborted) {
+      reject(Object.assign(new Error("Upload cancelled."), { name: "AbortError" }));
+      return;
+    }
+    signal?.addEventListener("abort", () => request.abort(), { once: true });
 
     request.upload.onprogress = ({ lengthComputable, loaded, total }) => {
       if (!lengthComputable || !onUploadProgress) return;
@@ -111,11 +132,17 @@ function sendMultipart(method, endpoint, formData, onUploadProgress) {
         return;
       }
 
+      if (request.status === 401) {
+        clearCurrentUser().finally(() => publishAuthenticationState(null));
+      }
+
       reject(
-        new Error(
+        new ApiError(
           data?.error ||
             data?.message ||
-            `Upload failed with status ${request.status}.`
+            `Upload failed with status ${request.status}.`,
+          request.status,
+          data
         )
       );
     };
@@ -126,11 +153,22 @@ function sendMultipart(method, endpoint, formData, onUploadProgress) {
           `Could not reach the backend at ${api.baseUrl}. Make sure npm run backend:dev is running and this device is on the same network.`
         )
       );
+    request.onabort = () =>
+      reject(Object.assign(new Error("Upload cancelled."), { name: "AbortError" }));
     request.ontimeout = () =>
       reject(new Error(`Upload timed out after ${request.timeout / 1000}s.`));
     request.timeout = NETWORK_DEFAULTS.uploadTimeoutMs;
     request.send(formData);
   });
+}
+
+export class ApiError extends Error {
+  constructor(message, status, data = null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.data = data;
+  }
 }
 
 function parseJson(text) {

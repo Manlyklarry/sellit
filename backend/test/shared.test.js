@@ -9,10 +9,21 @@ import {
   validateUsername,
 } from "../../shared/profileValidation.js";
 import {
+  getListingDisplayDescription,
+  getListingDisplayTitle,
   normalizeListingText,
+  normalizeListingLocation,
+  validateInquiryMessage,
   validateListingDescription,
+  validateListingLocation,
+  validateListingPrice,
   validateListingTitle,
 } from "../../shared/listingValidation.js";
+import {
+  ALL_LISTINGS_CATEGORY,
+  getCanonicalListingCategoryLabel,
+  getListingCategoryDefinition,
+} from "../../shared/listingCategories.js";
 
 test("shared API endpoints encode dynamic path segments", () => {
   assert.equal(API_ENDPOINTS.listings.root, API_ROUTES.listings);
@@ -41,4 +52,29 @@ test("shared listing validation rejects missing and oversized content", () => {
   assert.equal(validateListingTitle("Solid chair"), null);
   assert.equal(validateListingDescription("Too short"), "Description must be at least 10 characters.");
   assert.equal(validateListingDescription("A clean chair in very good condition."), null);
+  assert.equal(validateListingPrice("12.50"), null);
+  assert.match(validateListingPrice("12.345"), /decimal/i);
+  assert.equal(validateInquiryMessage("Is it available?"), null);
+  assert.match(validateInquiryMessage("x"), /at least/i);
+  assert.equal(
+    validateListingLocation({ latitude: 5.6, longitude: -0.2, address: "Accra" }),
+    null
+  );
+  assert.match(validateListingLocation({ latitude: 100, longitude: 0 }), /latitude/i);
+  assert.deepEqual(
+    normalizeListingLocation({ latitude: "5.6", longitude: "-0.2", address: " Accra " }),
+    { latitude: 5.6, longitude: -0.2, address: "Accra" }
+  );
+  assert.equal(getListingDisplayTitle("  Solid   chair "), "Solid chair");
+  assert.match(getListingDisplayDescription(""), /Message the seller/);
+});
+
+test("shared listing categories provide canonical client and server values", () => {
+  assert.equal(ALL_LISTINGS_CATEGORY, "All");
+  assert.deepEqual(getListingCategoryDefinition(3), {
+    id: 3,
+    label: "Clothing",
+  });
+  assert.equal(getCanonicalListingCategoryLabel(6, "Others"), "Other");
+  assert.equal(getListingCategoryDefinition(99), null);
 });

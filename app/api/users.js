@@ -16,13 +16,11 @@ export async function updateProfile({
   imageUri,
   name,
   removeImage = false,
-  user,
   username,
 }) {
   const formData = client.createFormData({
     name,
     removeImage,
-    user,
     username,
   });
 

@@ -30,12 +30,15 @@ export const env = {
     10_000
   ),
   databaseUrl: process.env.DATABASE_URL,
+  marketCurrencyCode: readCurrencyCode(process.env.MARKET_CURRENCY_CODE || "GHS"),
+  isProduction: process.env.NODE_ENV === "production",
+  trustProxy: readTrustProxy(process.env.TRUST_PROXY),
 };
 
 validateProductionEnvironment();
 
 export function getAllowedOrigins(originHeader) {
-  const expoOrigin = getExpoDevOrigin(originHeader);
+  const expoOrigin = env.isProduction ? null : getExpoDevOrigin(originHeader);
 
   return expoOrigin
     ? [...new Set([...env.corsOrigins, expoOrigin])]
@@ -43,7 +46,10 @@ export function getAllowedOrigins(originHeader) {
 }
 
 export function isAllowedOrigin(origin) {
-  return env.corsOrigins.includes(origin) || isExpoDevOrigin(origin);
+  return (
+    env.corsOrigins.includes(origin) ||
+    (!env.isProduction && isExpoDevOrigin(origin))
+  );
 }
 
 function getCorsOrigins() {
@@ -81,6 +87,25 @@ function readPositiveInteger(name, fallback) {
   }
 
   return parsed;
+}
+
+function readTrustProxy(value) {
+  if (!value) return false;
+  if (value === "true") return 1;
+  if (value === "false") return false;
+
+  const hops = Number(value);
+  if (Number.isInteger(hops) && hops > 0) return hops;
+
+  throw new Error("TRUST_PROXY must be false, true, or a positive integer.");
+}
+
+function readCurrencyCode(value) {
+  const code = String(value).trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(code)) {
+    throw new Error("MARKET_CURRENCY_CODE must be a three-letter ISO currency code.");
+  }
+  return code;
 }
 
 function validateProductionEnvironment() {

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: sellit_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      BETTER_AUTH_SECRET: ci-only-secret-with-at-least-32-characters
+      BETTER_AUTH_URL: http://localhost:8000
+      CORS_ORIGIN: http://localhost:8081
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sellit_test
+      EXPO_PUBLIC_API_URL: http://localhost:8000
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.4
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix backend
+      - run: npm run db:generate --prefix backend
+      - run: npm run db:deploy --prefix backend
+      - run: npm run lint
+      - run: npm test
+      - run: npx expo-doctor
+      - run: npx expo export --platform all --output-dir dist/ci

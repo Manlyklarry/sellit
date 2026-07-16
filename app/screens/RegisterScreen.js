@@ -2,7 +2,6 @@ import { Alert } from "react-native";
 
 import { signUp } from "../api/auth";
 import { updateProfile } from "../api/users";
-import { getCurrentUser } from "../auth/session";
 import { saveSellingType } from "../auth/onboarding";
 import AuthScreenLayout from "../components/auth/AuthScreenLayout";
 import AppForm from "../components/forms/AppForm";
@@ -25,7 +24,6 @@ function RegisterScreen({ navigation, route }) {
                 try {
                   await updateProfile({
                     name: values.name,
-                    user: await getCurrentUser(),
                     username: values.username,
                   });
                 } catch (profileError) {

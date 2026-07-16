@@ -14,6 +14,7 @@ const segment = (value) => encodeURIComponent(String(value));
 export const API_ENDPOINTS = Object.freeze({
   auth: {
     root: API_ROUTES.auth,
+    getSession: `${API_ROUTES.auth}/get-session`,
     wildcard: `${API_ROUTES.auth}/{*any}`,
     signInEmail: `${API_ROUTES.auth}/sign-in/email`,
     signOut: `${API_ROUTES.auth}/sign-out`,

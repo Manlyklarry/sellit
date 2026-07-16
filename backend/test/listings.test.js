@@ -16,7 +16,16 @@ describe("listings API", () => {
   let seededListing;
 
   before(async () => {
-    server = createApp().listen(0, "127.0.0.1");
+    server = createApp({
+      resolveAuthenticatedUser: async (req) => {
+        const userId = req.headers["x-test-user-id"];
+        if (!userId) return null;
+
+        return prisma.user.findUnique({
+          where: { id: userId },
+        });
+      },
+    }).listen(0, "127.0.0.1");
     await new Promise((resolve) => server.once("listening", resolve));
 
     const address = server.address();
@@ -74,6 +83,35 @@ describe("listings API", () => {
     assert.equal(detailResponse.status, 200);
     assert.equal(detailBody.listing.id, seededListing.id);
     assert.equal(detailBody.listing.title, "Owner listing");
+    assert.equal("sellerEmail" in detailBody.listing, false);
+    assert.equal(detailBody.listing.currency, "GHS");
+  });
+
+  test("paginates listings with opaque cursors", async () => {
+    await createListing(owner, "Codex integration pagination");
+    const firstResponse = await request(`${API_ENDPOINTS.listings.root}?limit=1`);
+    const firstBody = await firstResponse.json();
+
+    assert.equal(firstResponse.status, 200);
+    assert.equal(firstBody.listings.length, 1);
+    assert.ok(firstBody.nextCursor);
+
+    const secondResponse = await request(
+      `${API_ENDPOINTS.listings.root}?limit=1&cursor=${encodeURIComponent(firstBody.nextCursor)}`
+    );
+    const secondBody = await secondResponse.json();
+    assert.equal(secondResponse.status, 200);
+    assert.equal(secondBody.listings.length, 1);
+    assert.notEqual(secondBody.listings[0].id, firstBody.listings[0].id);
+  });
+
+  test("does not expose email from the public user endpoint", async () => {
+    const response = await request(API_ENDPOINTS.users.byId(owner.id), { user: null });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.user.id, owner.id);
+    assert.equal("email" in body.user, false);
   });
 
   test("updates profile details and rejects duplicate usernames", async () => {
@@ -81,7 +119,6 @@ describe("listings API", () => {
       method: "PUT",
       body: createProfileFormData({
         name: "Updated Owner",
-        user: owner,
         username: "updated_owner",
       }),
     });
@@ -95,9 +132,9 @@ describe("listings API", () => {
       method: "PUT",
       body: createProfileFormData({
         name: "Other User",
-        user: otherUser,
         username: "updated_owner",
       }),
+      user: otherUser,
     });
     const duplicateBody = await duplicateResponse.json();
 
@@ -111,7 +148,6 @@ describe("listings API", () => {
       body: createProfileFormData({
         image: true,
         name: "Updated Owner",
-        user: owner,
         username: "updated_owner",
       }),
     });
@@ -125,7 +161,6 @@ describe("listings API", () => {
       body: createProfileFormData({
         name: "Updated Owner",
         removeImage: true,
-        user: owner,
         username: "updated_owner",
       }),
     });
@@ -145,10 +180,11 @@ describe("listings API", () => {
     assert.equal(body.listing.sellerUsername, "updated_owner");
   });
 
-  test("rejects listing creation without a signed-in seller snapshot", async () => {
+  test("rejects listing creation without an authenticated session", async () => {
     const response = await request(API_ENDPOINTS.listings.root, {
       method: "POST",
-      body: createListingFormData({ seller: null }),
+      body: createListingFormData(),
+      user: null,
     });
     const body = await response.json();
 
@@ -160,11 +196,6 @@ describe("listings API", () => {
     const response = await request(API_ENDPOINTS.listings.root, {
       method: "POST",
       body: createListingFormData({
-        seller: {
-          email: owner.email,
-          id: owner.id,
-          name: owner.name,
-        },
         title: "Codex integration create",
       }),
     });
@@ -175,52 +206,107 @@ describe("listings API", () => {
     assert.equal(body.listing.sellerUserId, owner.id);
   });
 
+  test("rejects spoofed image content", async () => {
+    const response = await request(API_ENDPOINTS.listings.root, {
+      method: "POST",
+      body: createListingFormData({ validImage: false }),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 400);
+    assert.match(body.error, /supported JPEG, PNG, or WebP/i);
+  });
+
+  test("rejects self inquiries and duplicate buyer inquiries", async () => {
+    const listing = await createListing(owner, "Codex integration inquiry");
+    const selfResponse = await request(API_ENDPOINTS.listings.inquiries(listing.id), {
+      method: "POST",
+      json: { message: "Is this available?" },
+    });
+    assert.equal(selfResponse.status, 400);
+
+    const buyerRequest = {
+      method: "POST",
+      json: { message: "Is this available?" },
+      user: otherUser,
+    };
+    const firstResponse = await request(
+      API_ENDPOINTS.listings.inquiries(listing.id),
+      buyerRequest
+    );
+    assert.equal(firstResponse.status, 201);
+    const duplicateResponse = await request(
+      API_ENDPOINTS.listings.inquiries(listing.id),
+      buyerRequest
+    );
+    assert.equal(duplicateResponse.status, 409);
+  });
+
+  test("only unregisters push tokens owned by the authenticated user", async () => {
+    const token = `ExpoPushToken[test-${randomUUID()}]`;
+    await prisma.pushToken.create({
+      data: { token, userId: otherUser.id, platform: "ios" },
+    });
+
+    const ownerResponse = await request(API_ENDPOINTS.pushTokens.byToken(token), {
+      method: "DELETE",
+    });
+    assert.equal(ownerResponse.status, 204);
+    assert.ok(await prisma.pushToken.findUnique({ where: { token } }));
+
+    const otherResponse = await request(API_ENDPOINTS.pushTokens.byToken(token), {
+      method: "DELETE",
+      user: otherUser,
+    });
+    assert.equal(otherResponse.status, 204);
+    assert.equal(await prisma.pushToken.findUnique({ where: { token } }), null);
+  });
+
   test("protects listing deletion by owner", async () => {
     const listing = await createListing(owner, "Codex integration protected");
 
     const anonymousResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
       json: {},
+      user: null,
     });
     assert.equal(anonymousResponse.status, 401);
 
     const otherUserResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
       json: {
-        user: {
-          email: otherUser.email,
-          id: otherUser.id,
-        },
+        user: owner,
       },
+      user: otherUser,
     });
     assert.equal(otherUserResponse.status, 403);
 
     const ownerResponse = await request(API_ENDPOINTS.listings.byId(listing.id), {
       method: "DELETE",
-      json: {
-        user: {
-          email: owner.email,
-          id: owner.id,
-        },
-      },
+      json: {},
     });
     assert.equal(ownerResponse.status, 204);
   });
 
   async function request(path, options = {}) {
+    const { user = owner, ...requestOptions } = options;
     const headers = {
       Origin: origin,
-      ...(options.headers || {}),
+      ...(requestOptions.headers || {}),
     };
-    let body = options.body;
+    let body = requestOptions.body;
 
-    if (options.json) {
+    if (user?.id) {
+      headers["X-Test-User-Id"] = user.id;
+    }
+
+    if (requestOptions.json) {
       headers["Content-Type"] = "application/json";
-      body = JSON.stringify(options.json);
+      body = JSON.stringify(requestOptions.json);
     }
 
     return fetch(`${baseUrl}${path}`, {
-      ...options,
+      ...requestOptions,
       body,
       headers,
     });
@@ -246,8 +332,6 @@ async function createListing(owner, title) {
       categoryLabel: "Others",
       description: "A listing created by the integration test.",
       price: 12,
-      sellerEmail: owner.email,
-      sellerName: owner.name,
       sellerUserId: owner.id,
       title,
       images: {
@@ -265,19 +349,25 @@ async function createListing(owner, title) {
   });
 }
 
-function createListingFormData({ seller, title = "Codex integration upload" }) {
+function createListingFormData({
+  title = "Codex integration upload",
+  validImage = true,
+} = {}) {
   const formData = new FormData();
 
   formData.append("title", title);
   formData.append("price", "12");
-  formData.append("category", JSON.stringify({ label: "Others", value: 6 }));
+  formData.append("category", JSON.stringify({ label: "Other", value: 6 }));
   formData.append(
     "description",
     "A listing created by the integration test upload path."
   );
   formData.append("location", "null");
-  formData.append("seller", JSON.stringify(seller));
-  formData.append("images", new Blob(["test"], { type: "image/png" }), "item.png");
+  formData.append(
+    "images",
+    new Blob([validImage ? pngBytes() : "not-an-image"], { type: "image/png" }),
+    "item.png"
+  );
 
   return formData;
 }
@@ -286,19 +376,25 @@ function createProfileFormData({
   image = false,
   name,
   removeImage = false,
-  user,
   username,
 }) {
   const formData = new FormData();
 
   formData.append("name", name);
   formData.append("removeImage", String(removeImage));
-  formData.append("user", JSON.stringify(user));
   formData.append("username", username);
 
   if (image) {
-    formData.append("image", new Blob(["test"], { type: "image/png" }), "profile.png");
+    formData.append(
+      "image",
+      new Blob([pngBytes()], { type: "image/png" }),
+      "profile.png"
+    );
   }
 
   return formData;
+}
+
+function pngBytes() {
+  return Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
 }

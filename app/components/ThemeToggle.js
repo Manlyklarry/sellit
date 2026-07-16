@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet } from "react-native";
 
 import { useAppTheme } from "../config/theme";
+import LiquidGlassView from "./LiquidGlassView";
 
 function ThemeToggle({ compact = false }) {
   const { isDark, theme, toggleTheme } = useAppTheme();
@@ -27,42 +28,48 @@ function ThemeToggle({ compact = false }) {
       style={({ pressed }) => [
         styles.track,
         {
-          backgroundColor: isDark ? theme.secondarySoft : theme.primarySoft,
           borderColor: theme.border,
           width: compact ? 54 : 62,
         },
         pressed && styles.pressed,
       ]}
     >
-      <Animated.View
-        style={[
-          styles.thumb,
-          {
-            backgroundColor: isDark ? theme.secondary : theme.primary,
-            transform: [
-              {
-                translateX: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, travel],
-                }),
-              },
-            ],
-          },
-        ]}
+      <LiquidGlassView
+        fallbackColor={isDark ? theme.secondarySoft : theme.primarySoft}
+        isInteractive
+        style={styles.glassTrack}
+        tintColor={isDark ? theme.secondarySoft : theme.primarySoft}
       >
-        <MaterialCommunityIcons
-          name={isDark ? "weather-night" : "white-balance-sunny"}
-          color="#ffffff"
-          size={compact ? 14 : 16}
-        />
-      </Animated.View>
+        <Animated.View
+          style={[
+            styles.thumb,
+            {
+              backgroundColor: isDark ? theme.secondary : theme.primary,
+              transform: [
+                {
+                  translateX: progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, travel],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={isDark ? "weather-night" : "white-balance-sunny"}
+            color="#ffffff"
+            size={compact ? 14 : 16}
+          />
+        </Animated.View>
+      </LiquidGlassView>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   pressed: {
-    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
   },
   thumb: {
     width: 26,
@@ -75,6 +82,11 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 18,
     borderWidth: 1,
+    overflow: "hidden",
+  },
+  glassTrack: {
+    flex: 1,
+    borderRadius: 17,
     padding: 3,
   },
 });

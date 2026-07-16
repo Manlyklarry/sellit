@@ -16,7 +16,11 @@ export const listingValidationSchema = Yup.object({
     .transform((value, originalValue) => originalValue === "" ? undefined : value)
     .typeError("Price must be a number.")
     .required("Price is required.")
-    .min(LISTING_LIMITS.priceMin, `Price must be at least ${LISTING_LIMITS.priceMin}.`),
+    .min(LISTING_LIMITS.priceMin, `Price must be at least ${LISTING_LIMITS.priceMin}.`)
+    .max(LISTING_LIMITS.priceMax, `Price must be no more than ${LISTING_LIMITS.priceMax}.`)
+    .test("price-decimals", "Price can have no more than two decimal places.", (value) =>
+      value === undefined || Number.isInteger(value * 100)
+    ),
   title: Yup.string()
     .required("Name of item is required.")
     .min(LISTING_LIMITS.titleMin, `Name of item must be at least ${LISTING_LIMITS.titleMin} characters.`)

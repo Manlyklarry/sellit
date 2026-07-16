@@ -1,8 +1,6 @@
 import { clearCurrentUser, saveCurrentUser } from "../auth/session";
-import {
-  registerForPushNotifications,
-  unregisterCurrentPushToken,
-} from "../notifications/pushNotifications";
+import { unregisterCurrentPushToken } from "../notifications/pushNotifications";
+import { publishAuthenticationState } from "../auth/authEvents";
 import { API_ENDPOINTS } from "./endpoints";
 import client from "./client";
 
@@ -13,10 +11,6 @@ export function signUp({ email, name, password }) {
       name,
       password,
     },
-    fallbackUser: {
-      email,
-      name,
-    },
   });
 }
 
@@ -26,26 +20,43 @@ export function signIn({ email, password }) {
       email,
       password,
     },
-    fallbackUser: {
-      email,
-    },
   });
 }
 
 export async function signOut() {
+  await unregisterCurrentPushToken().catch(() => null);
   try {
     return await client.postJson(API_ENDPOINTS.auth.signOut);
   } finally {
-    await unregisterCurrentPushToken();
     await clearCurrentUser();
+    publishAuthenticationState(null);
   }
 }
 
-async function authenticate(path, { fallbackUser, payload }) {
-  const data = await client.postJson(path, payload);
-  const user = await saveCurrentUser(getUserFromResponse(data) || fallbackUser);
+export async function verifyCurrentSession() {
+  const data = await client.get(API_ENDPOINTS.auth.getSession);
+  const user = getUserFromResponse(data);
 
-  registerForPushNotifications(user);
+  if (!user?.id) {
+    await clearCurrentUser();
+    publishAuthenticationState(null);
+    return null;
+  }
+
+  const savedUser = await saveCurrentUser(user);
+  publishAuthenticationState(savedUser);
+  return savedUser;
+}
+
+async function authenticate(path, { payload }) {
+  const data = await client.postJson(path, payload);
+  const responseUser = getUserFromResponse(data);
+  if (!responseUser?.id) {
+    throw new Error("Authentication succeeded without a valid user session.");
+  }
+
+  const user = await saveCurrentUser(responseUser);
+  publishAuthenticationState(user);
 
   return data;
 }

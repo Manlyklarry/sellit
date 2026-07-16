@@ -18,45 +18,39 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function registerForPushNotifications(user) {
-  if (!user) return null;
-
-  try {
-    if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync(listingsChannelId, {
-        name: listingsChannelName,
-        importance: Notifications.AndroidImportance.DEFAULT,
-        sound: "default",
-      });
-    }
-
-    const permission = await getNotificationPermission();
-    if (!permission) return null;
-
-    const token = await getExpoPushToken();
-    if (!token) return null;
-
-    await registerPushToken({
-      platform: Platform.OS,
-      token,
-      user,
+export async function registerForPushNotifications() {
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync(listingsChannelId, {
+      name: listingsChannelName,
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: "default",
     });
-    await AsyncStorage.setItem(APP_STORAGE_KEYS.pushToken, token);
-
-    return token;
-  } catch (error) {
-    return null;
   }
+
+  const permission = await getNotificationPermission();
+  if (!permission) return null;
+
+  const token = await getExpoPushToken();
+
+  await registerPushToken({
+    platform: Platform.OS,
+    token,
+  });
+  await AsyncStorage.setItem(APP_STORAGE_KEYS.pushToken, token);
+
+  return token;
 }
 
 export async function unregisterCurrentPushToken() {
-  try {
-    const token = await AsyncStorage.getItem(APP_STORAGE_KEYS.pushToken);
-    if (!token) return;
+  const token = await AsyncStorage.getItem(APP_STORAGE_KEYS.pushToken);
+  if (!token) return;
 
-    await unregisterPushToken(token);
-    await AsyncStorage.removeItem(APP_STORAGE_KEYS.pushToken);
-  } catch {}
+  await unregisterPushToken(token);
+  await AsyncStorage.removeItem(APP_STORAGE_KEYS.pushToken);
+}
+
+export async function hasRegisteredPushToken() {
+  return Boolean(await AsyncStorage.getItem(APP_STORAGE_KEYS.pushToken));
 }
 
 async function getNotificationPermission() {
@@ -70,8 +64,10 @@ async function getNotificationPermission() {
 async function getExpoPushToken() {
   const projectId =
     Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
-  const options = projectId ? { projectId } : undefined;
-  const token = await Notifications.getExpoPushTokenAsync(options);
+  if (!projectId) {
+    throw new Error("Push notifications require an EAS project ID.");
+  }
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
 
   return token.data;
 }

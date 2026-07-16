@@ -6,6 +6,7 @@ import FeedNavigator from "./FeedNavigator";
 import { TAB_ROUTES } from "./routes";
 import { useAppTheme } from "../config/theme";
 import { AccountScreen, ListingEditScreen } from "../screens";
+import LiquidGlassView from "../components/LiquidGlassView";
 
 const Tab = createBottomTabNavigator();
 
@@ -43,13 +44,21 @@ function TabBarButton({ accessibilityState, children, onPress, routeName }) {
       ]}
     >
       {isSellTab ? (
-        <View style={[styles.sellButton, focused && styles.sellButtonFocused]}>
+        <LiquidGlassView
+          fallbackColor={focused ? theme.secondary : theme.primary}
+          isInteractive
+          style={[
+            styles.sellButton,
+            { shadowColor: focused ? theme.secondary : theme.primary },
+          ]}
+          tintColor={focused ? theme.secondary : theme.primary}
+        >
           <MaterialCommunityIcons
             name={tab.icon}
             color="#ffffff"
             size={28}
           />
-        </View>
+        </LiquidGlassView>
       ) : (
         <View style={[styles.tabPill, focused && styles.tabPillFocused]}>
           {children}
@@ -78,8 +87,15 @@ function AppNavigator() {
         tabBarHideOnKeyboard: true,
         tabBarItemStyle: styles.tabBarItem,
         tabBarLabel: () => null,
+        tabBarBackground: () => (
+          <LiquidGlassView
+            fallbackColor={theme.tab}
+            style={styles.tabBarBackground}
+            tintColor={theme.tab}
+          />
+        ),
         tabBarStyle: {
-          backgroundColor: theme.tab,
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           borderRadius: 28,
           bottom: 18,
@@ -126,7 +142,7 @@ function AppNavigator() {
 const createStyles = (theme) =>
   StyleSheet.create({
   pressed: {
-    opacity: 0.78,
+    transform: [{ scale: 0.96 }],
   },
   sellButton: {
     width: 60,
@@ -134,22 +150,20 @@ const createStyles = (theme) =>
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.primary,
-    shadowColor: theme.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.28,
     shadowRadius: 14,
     elevation: 8,
-  },
-  sellButtonFocused: {
-    backgroundColor: theme.secondary,
-    shadowColor: theme.secondary,
   },
   sellButtonSlot: {
     top: -22,
   },
   tabBarItem: {
     height: 56,
+  },
+  tabBarBackground: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 28,
   },
   tabButton: {
     flex: 1,

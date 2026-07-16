@@ -9,6 +9,13 @@ export const CACHE_KEYS = Object.freeze({
   listings: "listings",
 });
 
+export const CACHE_DEFAULTS = Object.freeze({
+  listingsMaxAgeMs: 15 * 60 * 1000,
+  version: 1,
+});
+
+export const LISTING_PAGE_SIZE = 20;
+
 export const NETWORK_DEFAULTS = Object.freeze({
   apiPort: "8000",
   expoPort: "8081",
@@ -31,11 +38,6 @@ export const UI_TIMINGS = Object.freeze({
   feedEntranceMs: 420,
   mockRefreshMs: 900,
   uploadSuccessMs: 2_400,
-});
-
-export const LOCATION_DEFAULTS = Object.freeze({
-  distanceIntervalMeters: 10,
-  updateIntervalMs: 5_000,
 });
 
 export const MARKET_DEFAULTS = Object.freeze({
